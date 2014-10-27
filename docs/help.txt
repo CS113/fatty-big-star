@@ -1,0 +1,9 @@
+Refer to this document when you need help with something related to
+gameplay for debugging.
+
+Add to this document if you feel that you have something of
+value to add.
+
+See the README.md file on our Github page for dev help.
+
+**This document is meant for gameplay related help, not anything technical!**
