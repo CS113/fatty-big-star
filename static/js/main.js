@@ -1,16 +1,23 @@
 // Static settings variables
-var GROUND_HEIGHT = 128,
-    PATRICK_VELOCITY_X = 300;
+var DEBUG = true,  // toggle this variable
+    GAME_WIDTH = 800,
+    GAME_HEIGHT = 600,
+    GROUND_HEIGHT = 128,
+    PATRICK_VELOCITY_X = 300,
+    GAME_TEXT = 'Lucida Grande',
+    BLACK_HEX = '#000',
+    RED_HEX = '#FF0000';
 
 var game = new Phaser.Game(
-    800,
-    600,
+    GAME_WIDTH,
+    GAME_HEIGHT,
     Phaser.AUTO,
     'game_box',
     { preload: preload,
       create: create,
       update: update }
 );
+
 
 // Load static assets
 function preload() {
@@ -21,28 +28,38 @@ function preload() {
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 30, 50);
 }
 
-// Ingame dynamic variables
+
+    // Physics varaibles
 var speed = 0,
     acceleration = 0,
     altitude = 0,
+    energy = 0,
 
+    // Entity groups
     player,
     platforms,
     patties,
     jellyfishes,
     cursors,
 
+    // Text
     altitude_text,
+    debug_text,
 
     facing_right = true,
-    falling = false,
 
+    // Time and interval variables
     starting_time,
     elapsed,
     milliseconds = 0,
     seconds = 0;
 
 
+/*
+ * Called on every game update(), updates the counters for
+ * ingame seconds, elapsed time, and milliseconds. Important
+ * because the time variables are used in game physics calculations.
+ */
 function updateTimer() {
     seconds = Math.floor(game.time.time / 1000);
     milliseconds = Math.floor(game.time.time);
@@ -51,61 +68,74 @@ function updateTimer() {
 
 
 function create() {
-    // We're going to be using physics, so enable the Arcade Physics system
+    // Enable physics for in-game entities
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
     game.add.sprite(0, 0, 'sky');
 
-    // Enable physics for any object that is created in this group
     platforms = game.add.group();
+    // Enable physics for any object created in this group
+    // Note that the sky has no physics enabled
     platforms.enableBody = true;
+    // The first platform is just the ground
     var ground = platforms.create(
                     0,
                     game.world.height - GROUND_HEIGHT,
                     'ground');
 
-    // Scale it to fit the width of the game (the original sprite is 400x32 in size)
+    // Scale it to fit the width of the game
+    // (the original sprite is 400x32 in size)
     ground.scale.setTo(2, 4);
 
-    // This stops it from falling away when you jump on it
+    // `body.immovable` set prevents movement after two
+    // this object collides with another
     ground.body.immovable = true;
 
+    // Add the main avatar, Patrick!
     player = game.add.sprite(
                 game.world.width / 2,
                 game.world.height - 150,
                 'patrick');
-
-    // We need to enable physics on the player
     game.physics.arcade.enable(player);
-
-    player.body.bounce.y = 0.2;
+    // player.body.bounce.y = 0.2;
+    // player.body.gravity.y = 300;
+    player.body.immovable = true;
     player.body.collideWorldBounds = true;
-
     player.animations.add('standing', [1]);
     player.animations.add('falling', [0]);
-    player.anchor.setTo(0.5, 0.5);
     player.animations.play('standing');
+    player.anchor.setTo(0.5, 0.5);
 
     jellyfishes = game.add.group();
     jellyfishes.enableBody = true;
 
     patties = game.add.group();
     patties.enableBody = true;
+
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
                         0.75 * game.world.width,
                         game.world.height - GROUND_HEIGHT - 50, 
                         'patty');
-
     first_patty.scale.setTo(0.5, 0.5);
 
     altitude_text = game.add.text(
         10, 
         10,
         'Altitude: 0', 
-        { fontSize: '15px',
-          fill: '#000' }
+        { font: '20px ' + GAME_TEXT,
+          fill: BLACK_HEX }
     );
+
+    if (DEBUG) { 
+        debug_text = game.add.text(
+            game.width / 2, 
+            13,
+            '<DEBUG>: Speed: 0, Energy: 0', 
+            { font: '15px ' + GAME_TEXT,
+              fill: RED_HEX }
+        );
+    }
 
     starting_time = game.time.time;
     elapsed = game.time.time - starting_time;
@@ -159,7 +189,6 @@ function update() {
     updateTimer();
 
     // Check for *all* collisions
-    //game.physics.arcade.collide(player, platforms);
     game.physics.arcade.collide(jellyfishes, platforms);
     game.physics.arcade.collide(player, patties, collect_patty, null, this);
 
@@ -175,7 +204,7 @@ function update() {
 
     // Game over
     if (altitude < 0) {
-         
+        console.log("GAME OVER!"); 
     }
 
     // New jellyfish are popped in every 20 milliseconds
@@ -183,8 +212,8 @@ function update() {
         add_jellyfish();
     }
 
-    // New krabby patties are popped in every 40 ms
-    if (game.time.time % 20 === 0 && altitude > 0) {
+    // New krabby patties are popped in every 40 milliseconds
+    if (game.time.time % 30 === 0 && altitude > 0) {
         add_krabby_patty();
     }
 
@@ -203,20 +232,19 @@ function update() {
         item.body.acceleration.y = acceleration;
     }, this);
 
-    console.log("The speed is " + speed.toString());
-
     // Exhaust the effect of krabby patties so
     // they don't last forever
-    if (altitude > 0 && game.time.time % 14 === 0) {
+    if (energy > 0) {
+        speed = 400;
+        energy--;
+    } else if (altitude > 0) {
         speed -= 30;
-        // acceleration -= 30;
     }
 
     // Reset the player's horiz velocity (movement)
     player.body.velocity.x = 0;
 
-    falling = (speed <= 0 && altitude > 0);
-
+    var falling = (speed <= 0 && altitude > 0);
     if (falling) {
         player.animations.play('falling');
     } else {
@@ -243,20 +271,25 @@ function update() {
         // player.frame = 4;
     }
     
-    if (game.time.time % 30 === 0) {
+    // Update text counters
+    if (game.time.time % 4 === 0) {
         altitude_text.text = 'Altitude: ' + altitude.toString();
+        if (DEBUG) {
+            debug_text.text =
+                '<DEBUG>: Speed: ' + speed.toString() +
+                ', Energy: ' + energy.toString();
+        }
     }
 }
 
 
 function collect_patty(player, patty) {
-    console.log("Patty has been consumed!");
     patty.kill();
-    speed += 500;
+    energy += 100;
 }
 
 
 function hit_jellyfish(player, jellyfish) {
     jellyfish.kill();
-    console.log("HIT JELLYFISH");
+    // TODO:
 }
