@@ -1,127 +1,262 @@
-var game = new Phaser.Game(800, 600, Phaser.AUTO, 'game_box', { preload: preload, create: create, update: update });
+// Static settings variables
+var GROUND_HEIGHT = 128,
+    PATRICK_VELOCITY_X = 300;
+
+var game = new Phaser.Game(
+    800,
+    600,
+    Phaser.AUTO,
+    'game_box',
+    { preload: preload,
+      create: create,
+      update: update }
+);
 
 // Load static assets
 function preload() {
     game.load.image('sky', 'static/imgs/sky.png');
     game.load.image('ground', 'static/imgs/platform.png');
-    game.load.image('star', 'static/imgs/star.png');
-    game.load.spritesheet('dude', 'static/imgs/dude.png', 32, 48);
+    game.load.image('patty', 'static/imgs/patty.png');
+    game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
+    game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 30, 50);
 }
 
-var player;
-var platforms;
-var cursors;
+// Ingame dynamic variables
+var speed = 0,
+    acceleration = 0,
+    altitude = 0,
 
-var stars;
-var score = 0;
-var scoreText;
+    player,
+    platforms,
+    patties,
+    jellyfishes,
+    cursors,
+
+    altitude_text,
+
+    facing_right = true,
+    falling = false,
+
+    starting_time,
+    elapsed,
+    milliseconds = 0,
+    seconds = 0;
+
+
+function updateTimer() {
+    seconds = Math.floor(game.time.time / 1000);
+    milliseconds = Math.floor(game.time.time);
+    elapsed = game.time.time - starting_time;
+}
+
 
 function create() {
     // We're going to be using physics, so enable the Arcade Physics system
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
-    // A simple background for our game
     game.add.sprite(0, 0, 'sky');
 
-    // The platforms group contains the ground and the 2 ledges we can jump on
+    // Enable physics for any object that is created in this group
     platforms = game.add.group();
-
-    // We will enable physics for any object that is created in this group
     platforms.enableBody = true;
-
-    // Here we create the ground.
-    var ground = platforms.create(0, game.world.height - 64, 'ground');
+    var ground = platforms.create(
+                    0,
+                    game.world.height - GROUND_HEIGHT,
+                    'ground');
 
     // Scale it to fit the width of the game (the original sprite is 400x32 in size)
-    ground.scale.setTo(2, 2);
+    ground.scale.setTo(2, 4);
 
     // This stops it from falling away when you jump on it
     ground.body.immovable = true;
 
-    // Now let's create two ledges
-    var ledge = platforms.create(400, 400, 'ground');
-    ledge.body.immovable = true;
-
-    ledge = platforms.create(-150, 250, 'ground');
-    ledge.body.immovable = true;
-
-    // The player and its settings
-    player = game.add.sprite(32, game.world.height - 150, 'dude');
+    player = game.add.sprite(
+                game.world.width / 2,
+                game.world.height - 150,
+                'patrick');
 
     // We need to enable physics on the player
     game.physics.arcade.enable(player);
 
-    // Player physics properties. Give the little guy a slight bounce.
     player.body.bounce.y = 0.2;
-    player.body.gravity.y = 300;
     player.body.collideWorldBounds = true;
 
-    // Our two animations, walking left and right.
-    player.animations.add('left', [0, 1, 2, 3], 10, true);
-    player.animations.add('right', [5, 6, 7, 8], 10, true);
+    player.animations.add('standing', [1]);
+    player.animations.add('falling', [0]);
+    player.anchor.setTo(0.5, 0.5);
+    player.animations.play('standing');
 
-    // Finally some stars to collect
-    stars = game.add.group();
+    jellyfishes = game.add.group();
+    jellyfishes.enableBody = true;
 
-    // We will enable physics for any star that is created in this group
-    stars.enableBody = true;
+    patties = game.add.group();
+    patties.enableBody = true;
+    // Initial patty on ground to give Patrick a boost
+    var first_patty = patties.create(
+                        0.75 * game.world.width,
+                        game.world.height - GROUND_HEIGHT - 50, 
+                        'patty');
 
-    // Here we'll create 12 of them evenly spaced apart
-    for (var i = 0; i < 12; i++) {
-        // Create a star inside of the 'stars' group
-        var star = stars.create(i * 70, 0, 'star');
+    first_patty.scale.setTo(0.5, 0.5);
 
-        // Let gravity do its thing
-        star.body.gravity.y = 300;
+    altitude_text = game.add.text(
+        10, 
+        10,
+        'Altitude: 0', 
+        { fontSize: '15px',
+          fill: '#000' }
+    );
 
-        // This just gives each star a slightly random bounce value
-        star.body.bounce.y = 0.7 + Math.random() * 0.2;
-    }
-
-    // Score text
-    scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+    starting_time = game.time.time;
+    elapsed = game.time.time - starting_time;
 
     // Controls
     cursors = game.input.keyboard.createCursorKeys();
 }
 
 
-function update() {
-    // Collide the player and the stars with the platforms
-    game.physics.arcade.collide(player, platforms);
-    game.physics.arcade.collide(stars, platforms);
+function add_jellyfish() {
+    var jelly = jellyfishes.create(
+                    Math.floor(Math.random() * game.world.width),
+                    0,
+                    'jellyfish');
+    jelly.body.bounce.y = 0.7 + Math.random() * 0.2;
+    jelly.checkWorldBounds = true; 
+    jelly.outOfBoundsKill = true;
+    jelly.animations.add('swim', [0, 1, 2, 3], 12, true);
+    jelly.animations.play('swim');
 
-    // Checks to see if the player overlaps with any of the stars,
-    // if he does call the collectStar function
-    game.physics.arcade.overlap(player, stars, collectStar, null, this);
+    // Start each jellyfish at a random animation to look more real
+    jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
+}
+
+
+function add_krabby_patty() {
+    var patty = patties.create(
+                    Math.floor(Math.random() * game.world.width),
+                    0,
+                    'patty');
+    patty.scale.setTo(0.5, 0.5);
+}
+
+
+/*
+ * IMPORTANT: Because the update function's contents vary in
+ * functionality and depend on eachother, the seperate functions
+ * must be divided in sequences.
+ *
+ * 1. Update all game clocks
+ * 2. Check for all collisions
+ * 3. Insert new objects if needed
+ * 4. Update physics
+ * 5. Update animations
+ * 6. Check user keyboard input and perform needed actions
+ * 7. Update text
+ *
+ */
+function update() {
+    // Update all game clocks
+    updateTimer();
+
+    // Check for *all* collisions
+    //game.physics.arcade.collide(player, platforms);
+    game.physics.arcade.collide(jellyfishes, platforms);
+    game.physics.arcade.collide(player, patties, collect_patty, null, this);
+
+    game.physics.arcade.overlap(player,
+                                jellyfishes,
+                                hit_jellyfish,
+                                null,
+                                this);
+
+    // Insert new objects if needed
+
+    altitude += speed;
+
+    // Game over
+    if (altitude < 0) {
+         
+    }
+
+    // New jellyfish are popped in every 20 milliseconds
+    if (game.time.time % 20 === 0 && altitude > 0) {
+        add_jellyfish();
+    }
+
+    // New krabby patties are popped in every 40 ms
+    if (game.time.time % 20 === 0 && altitude > 0) {
+        add_krabby_patty();
+    }
+
+    platforms.forEach(function(item) {
+        item.body.velocity.y = speed;
+        item.body.acceleration.y = acceleration;
+    }, this);
+
+    jellyfishes.forEach(function(item) {
+        item.body.velocity.y = speed;
+        item.body.acceleration.y = acceleration;
+    }, this);
+
+    patties.forEach(function(item) {
+        item.body.velocity.y = speed;
+        item.body.acceleration.y = acceleration;
+    }, this);
+
+    console.log("The speed is " + speed.toString());
+
+    // Exhaust the effect of krabby patties so
+    // they don't last forever
+    if (altitude > 0 && game.time.time % 14 === 0) {
+        speed -= 30;
+        // acceleration -= 30;
+    }
 
     // Reset the player's horiz velocity (movement)
     player.body.velocity.x = 0;
 
+    falling = (speed <= 0 && altitude > 0);
+
+    if (falling) {
+        player.animations.play('falling');
+    } else {
+        player.animations.play('standing');
+    }
+
     if (cursors.left.isDown) {
-        player.body.velocity.x = -150;
-        player.animations.play('left');
+        player.body.velocity.x = -PATRICK_VELOCITY_X;
+        if (facing_right) {
+            facing_right = false; 
+            player.scale.x *= -1;
+        }
     }
     else if (cursors.right.isDown) {
-        player.body.velocity.x = 150;
-        player.animations.play('right');
+        player.body.velocity.x = PATRICK_VELOCITY_X;
+        if (!facing_right) {
+            facing_right = true; 
+            player.scale.x *= -1;
+        }
     }
     else {
         // stand still, no horiz movement
-        player.animations.stop();
-        player.frame = 4;
+        // player.animations.stop();
+        // player.frame = 4;
     }
     
-    // Allow the player to jump if they are touching the ground.
-    if(cursors.up.isDown && player.body.touching.down) {
-        player.body.velocity.y = -350;
+    if (game.time.time % 30 === 0) {
+        altitude_text.text = 'Altitude: ' + altitude.toString();
     }
 }
 
 
-function collectStar(player, star) {
-    star.kill();
+function collect_patty(player, patty) {
+    console.log("Patty has been consumed!");
+    patty.kill();
+    speed += 500;
+}
 
-    score += 10;
-    scoreText.text = 'Score: ' + score;
+
+function hit_jellyfish(player, jellyfish) {
+    jellyfish.kill();
+    console.log("HIT JELLYFISH");
 }
