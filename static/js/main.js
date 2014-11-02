@@ -6,7 +6,7 @@ var DEBUG = true,  // toggle this variable
     PATRICK_VELOCITY_X = 300,
     GAME_TEXT = 'Lucida Grande',
     BLACK_HEX = '#000',
-    RED_HEX = '#FF0000';
+    GREEN_HEX = '#83F52C';
 
 var game = new Phaser.Game(
     GAME_WIDTH,
@@ -22,10 +22,12 @@ var game = new Phaser.Game(
 // Load static assets
 function preload() {
     game.load.image('sky', 'static/imgs/sky.png');
+    game.load.image('black_bg', 'static/imgs/game_over.png');
     game.load.image('ground', 'static/imgs/platform.png');
     game.load.image('patty', 'static/imgs/patty.png');
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
-    game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 30, 50);
+    game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 34, 61, 2);
+    game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
 }
 
 
@@ -41,6 +43,7 @@ var speed = 0,
     patties,
     jellyfishes,
     cursors,
+    aura,
 
     // Text
     altitude_text,
@@ -101,10 +104,16 @@ function create() {
     // player.body.gravity.y = 300;
     player.body.immovable = true;
     player.body.collideWorldBounds = true;
-    player.animations.add('standing', [1]);
-    player.animations.add('falling', [0]);
-    player.animations.play('standing');
+    //player.animations.add('walking', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 20, true);
+    player.animations.add('flying', [0, 1, 2], 30, true);
+    player.animations.play('flying');
     player.anchor.setTo(0.5, 0.5);
+
+    aura = game.add.sprite(50, 50, 'aura_good');
+    aura.animations.add('revive', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    aura.scale.setTo(0.5, 0.5);
+    aura.anchor.setTo(0.5, 0.5);
+    aura.exists = false;
 
     jellyfishes = game.add.group();
     jellyfishes.enableBody = true;
@@ -114,10 +123,11 @@ function create() {
 
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
-                        0.75 * game.world.width,
-                        game.world.height - GROUND_HEIGHT - 50, 
+                        0.5 * game.world.width - 20,
+                        10, 
                         'patty');
     first_patty.scale.setTo(0.5, 0.5);
+    first_patty.body.gravity.y = 600;
 
     altitude_text = game.add.text(
         10, 
@@ -133,7 +143,7 @@ function create() {
             13,
             '<DEBUG>: Speed: 0, Energy: 0', 
             { font: '15px ' + GAME_TEXT,
-              fill: RED_HEX }
+              fill: GREEN_HEX }
         );
     }
 
@@ -190,6 +200,7 @@ function update() {
 
     // Check for *all* collisions
     game.physics.arcade.collide(jellyfishes, platforms);
+    game.physics.arcade.collide(patties, platforms);
     game.physics.arcade.collide(player, patties, collect_patty, null, this);
 
     game.physics.arcade.overlap(player,
@@ -205,6 +216,9 @@ function update() {
     // Game over
     if (altitude < 0) {
         console.log("GAME OVER!"); 
+        game_over();
+        // lmfao .. we lazy
+        window.location.reload();
     }
 
     // New jellyfish are popped in every 20 milliseconds
@@ -217,6 +231,9 @@ function update() {
         add_krabby_patty();
     }
 
+    aura.x = player.x;
+    aura.y = player.y;
+
     platforms.forEach(function(item) {
         item.body.velocity.y = speed;
         item.body.acceleration.y = acceleration;
@@ -228,7 +245,9 @@ function update() {
     }, this);
 
     patties.forEach(function(item) {
-        item.body.velocity.y = speed;
+        if (item.body.gravity.y === 0) {
+            item.body.velocity.y = speed;
+        }
         item.body.acceleration.y = acceleration;
     }, this);
 
@@ -245,10 +264,12 @@ function update() {
     player.body.velocity.x = 0;
 
     var falling = (speed <= 0 && altitude > 0);
-    if (falling) {
-        player.animations.play('falling');
+    var flying = (altitude > 0); 
+    if (flying) {
+        player.animations.play('flying');
     } else {
-        player.animations.play('standing');
+        player.animations.stop();
+        //player.animations.play('walking');
     }
 
     if (cursors.left.isDown) {
@@ -265,10 +286,10 @@ function update() {
             player.scale.x *= -1;
         }
     }
-    else {
+    else if (!flying) {
         // stand still, no horiz movement
         // player.animations.stop();
-        // player.frame = 4;
+        // player.frame = 5;
     }
     
     // Update text counters
@@ -285,6 +306,8 @@ function update() {
 
 function collect_patty(player, patty) {
     patty.kill();
+    aura.reset(player.x, player.y);
+    aura.play('revive', 60, false, true);
     energy += 100;
 }
 
@@ -292,4 +315,15 @@ function collect_patty(player, patty) {
 function hit_jellyfish(player, jellyfish) {
     jellyfish.kill();
     // TODO:
+}
+
+function game_over() {
+    game.add.sprite(0, 0, 'black_bg'); 
+    var game_over_text = game.add.text(
+        game.width/2-100, 
+        game.height/2,
+        'GAME OVER', 
+        { font: '40px ' + GAME_TEXT,
+          fill: '#FFF' }
+    );
 }
