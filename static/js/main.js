@@ -28,6 +28,8 @@ function preload() {
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 34, 61, 2);
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
+	game.load.audio('backgroundMusic', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
+
 }
 
 
@@ -69,11 +71,14 @@ function updateTimer() {
     elapsed = game.time.time - starting_time;
 }
 
-
+var music;
 function create() {
     // Enable physics for in-game entities
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
+	// Add background sound
+	music = game.add.audio('backgroundMusic');
+    music.play();
     game.add.sprite(0, 0, 'sky');
 
     platforms = game.add.group();
