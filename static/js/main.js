@@ -28,6 +28,7 @@ function preload() {
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 34, 61, 2);
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
+	game.load.spritesheet('shark', 'static/imgs/sharks.png', 103,45);
 	game.load.audio('backgroundMusic', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
 
 }
@@ -46,6 +47,7 @@ var speed = 0,
     jellyfishes,
     cursors,
     aura,
+	sharks,
 
     // Text
     altitude_text,
@@ -125,6 +127,9 @@ function create() {
 
     patties = game.add.group();
     patties.enableBody = true;
+	
+	sharks = game.add.group();
+	sharks.enableBody = true;
 
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
@@ -160,6 +165,7 @@ function create() {
 }
 
 
+
 function add_jellyfish() {
     var jelly = jellyfishes.create(
                     Math.floor(Math.random() * game.world.width),
@@ -175,6 +181,20 @@ function add_jellyfish() {
     jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
 }
 
+function add_shark() {
+    var shark = sharks.create(
+                    0,
+                    Math.floor(Math.random() * game.world.height),
+                    'shark');
+    shark.body.x = shark.body.x + 1;
+    shark.checkWorldBounds = true; 
+    shark.outOfBoundsKill = true;
+    shark.animations.add('swim', [0, 1, 2], 12, true);
+    shark.animations.play('swim');
+
+    // Start each shark at a random animation to look more real
+    shark.animations.currentAnim.frame = Math.floor(Math.random() * 2);
+}
 
 function add_krabby_patty() {
     var patty = patties.create(
@@ -234,6 +254,7 @@ function update() {
     // New krabby patties are popped in every 40 milliseconds
     if (game.time.time % 30 === 0 && altitude > 0) {
         add_krabby_patty();
+		add_shark();
     }
 
     aura.x = player.x;
@@ -246,6 +267,13 @@ function update() {
 
     jellyfishes.forEach(function(item) {
         item.body.velocity.y = speed;
+        item.body.acceleration.y = acceleration;
+    }, this);
+	
+	 sharks.forEach(function(item) {
+        item.body.velocity.x = speed;
+        item.body.acceleration.x = acceleration;
+		item.body.velocity.y = speed;
         item.body.acceleration.y = acceleration;
     }, this);
 
@@ -313,7 +341,7 @@ function collect_patty(player, patty) {
     patty.kill();
     aura.reset(player.x, player.y);
     aura.play('revive', 60, false, true);
-    energy += 100;
+    energy += 1000;
 }
 
 
