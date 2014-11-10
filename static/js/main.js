@@ -266,8 +266,14 @@ function add_jellyfish(x_coord, y_coord) {
 }
 
 
+function numberWithCommas(n) {
+    var parts=n.toString().split(".");
+    return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (parts[1] ? "." + parts[1] : "");
+}
+
+
 function update_physics() {
-    altitude += speed;
+    
 
     // Update aura positions to patrick, this should be done elsewhere!
     aura.x = player.x;
@@ -310,16 +316,18 @@ function update_physics() {
         speed = 400;
         if (patty_boost_timer > 0) {
             speed = speed + PATTY_SPEED_BOOST;
+			//acceleration += PATTY_SPEED_BOOST;
             patty_boost_timer--;
         }
         energy--;
     } else if (altitude > 0) {
         speed -= 30;
     }
-
+	altitude += Math.floor(speed * (1/60));
     // Reset the player's horiz velocity (movement)
     player.body.velocity.x = 0;
 }
+
 
 
 /*
@@ -418,7 +426,8 @@ function update() {
     // ==== Text and counters ====
     // ===========================
     if (game.time.time % 4 === 0) {
-        altitude_text.text = 'Altitude: ' + altitude.toString();
+		altitude_as_string = numberWithCommas(altitude);
+        altitude_text.text = 'Altitude: ' + altitude_as_string;
 
         var energy_percent = Math.floor(
                                 (energy / ENERGY_CAP) * 100).toString() + "%";
