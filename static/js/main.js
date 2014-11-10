@@ -32,7 +32,7 @@ function preload() {
     game.load.image('empty_energy_bar', 'static/imgs/empty_energy_bar.png');
 
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
-    game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 34, 61, 2);
+    game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
 
 	game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
@@ -125,7 +125,7 @@ function create() {
     // player.body.gravity.y = 300;
     player.body.immovable = true;
     player.body.collideWorldBounds = true;
-    player.animations.add('flying', [0, 1, 2], 30, true);
+    player.animations.add('flying', [0, 1, 2], 15, true);
     player.animations.play('flying');
     player.anchor.setTo(0.5, 0.5);
 
@@ -410,8 +410,8 @@ function update() {
         }
     } else if (!flying) {
         // stand still, no horiz movement
-        // player.animations.stop();
-        // player.frame = 5;
+        player.animations.stop();
+        player.frame = 2;
     }
     
     // ===========================
