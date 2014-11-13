@@ -209,7 +209,8 @@ function add_grouped(entity_name) {
     var max_jellyfish_group = 20;
     var max_bubble_group = 50;
     var max_group;
-
+	
+	/*Why not make this a dict?*/
     if (entity_name == 'bubble') {
         max_group = max_bubble_group;
     } else if (entity_name = 'jellyfish') {
@@ -225,6 +226,7 @@ function add_grouped(entity_name) {
         var x_variance = pos_neg * Math.random() * variance_mapping[entity_name];
         var y_variance = -1 * Math.random() * variance_mapping[entity_name];
         // console.log(variance_mapping[entity_name]);
+        /*Why not make this a dict?*/
         if (entity_name == 'bubble') {
             add_bubble(x_coord + x_variance,
                        y_coord + y_variance);
@@ -260,7 +262,8 @@ function add_jellyfish(x_coord, y_coord) {
     jelly.outOfBoundsKill = true;
     jelly.animations.add('swim', [0, 1, 2, 3], 12, true);
     jelly.animations.play('swim');
-
+	jelly.oscl_coef = Math.random() * (100) + 200;
+	jelly.x_speed = jelly.oscl_coef - 100;
     // Start each jellyfish at a random animation to look more real
     jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
 }
@@ -285,8 +288,8 @@ function update_physics() {
     }, this);
 
     jellyfishes.forEach(function(item) {
-        item.body.velocity.y = speed;
-        item.body.acceleration.y = acceleration;
+        item.body.velocity.x = item.x_speed;
+		item.body.velocity.y = item.oscl_coef * Math.sin(game.time.now / 100) + speed;
     }, this);
 
     bubbles.forEach(function(item) {
