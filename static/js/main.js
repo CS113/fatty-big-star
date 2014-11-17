@@ -442,15 +442,18 @@ function update() {
     // ==== Add & delete entities ====
     // ===============================
 
-    if (game.time.time % (50 + Math.floor(Math.random() * 100)) === 0
-            && altitude > 0) {
-                add_grouped('jellyfish');
-            }
+    if (game.time.time %
+            (50 + Math.floor(Math.random() * 100)) === 0 && altitude > 0) {
+        add_grouped('jellyfish');
+    }
 
-    if (game.time.time % 15 === 0
-            && altitude > 0) {
-                add_krabby_patty();
-            }
+    if (game.time.time % 15 === 0 && altitude > 0) {
+        add_krabby_patty();
+    }
+
+    if (game.time.time % 100 === 0 && altitude > 0) {
+        add_shark();
+    }
 
 
     if(altitude % 1800 === 0  && altitude > 999)
@@ -459,10 +462,9 @@ function update() {
     }
 
     if (game.time.time %
-            (10 + Math.floor(Math.random() * 65)) === 0
-            && altitude > 0) {
-                add_grouped('bubble');
-            }
+            (10 + Math.floor(Math.random() * 65)) === 0 && altitude > 0) {
+        add_grouped('bubble');
+    }
 
     // ==================
     // ===== Physics ====
