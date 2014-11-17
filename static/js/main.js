@@ -34,7 +34,7 @@ function preload() {
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
-    game.load.spritesheet('squid', 'static/imgs/Squid.png', 115, 62);
+    game.load.spritesheet('squid', 'static/imgs/squidsheet.png', 49, 121);
     game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
 
     game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
@@ -295,7 +295,7 @@ function add_squid(x_coord, y_coord) {
     squid.checkWorldBounds = true;
     //squid.angle = 90;
     squid.outOfBoundsKill = true;
-    squid.animations.add('swim', [0, 1, 2, 3, 4], 12, true);
+    squid.animations.add('swim', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 12, true);
     squid.animations.play('swim');
 
 }
@@ -426,10 +426,11 @@ function update() {
     if (game.time.time % 15 === 0
             && altitude > 0) {
                 add_krabby_patty();
+				
             }
 
 
-    if(altitude % 1800 === 0  && altitude > 999)
+    if(altitude % 900 === 0  && altitude > 999)
     {
         add_squid(0, 600);
     }
