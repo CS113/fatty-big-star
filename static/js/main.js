@@ -34,6 +34,8 @@ function preload() {
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
+	game.load.spritesheet('squid', 'static/imgs/Squid.png', 115, 62);
+	game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
 
 	game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
 }
@@ -57,6 +59,8 @@ var _____,
     bubbles,
     aura,
     energy_bar,
+	inks,
+	squids,
 
     // Text
     altitude_text,
@@ -141,6 +145,12 @@ function create() {
     jellyfishes = game.add.group();
     jellyfishes.enableBody = true;
 
+	inks = game.add.group();
+	inks.enableBody = true;
+	
+	squids = game.add.group();
+	squids.enableBody = true;
+	
     patties = game.add.group();
     patties.enableBody = true;
 
@@ -268,6 +278,32 @@ function add_jellyfish(x_coord, y_coord) {
     jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
 }
 
+function add_ink() {
+	var ink = inks.create(player.x-300, -200, 'ink');
+	
+	ink.checkWorldBounds = true;
+	ink.outOfBoundsKill = true;
+	ink.animations.add('show', [0] , 12, true);
+	ink.animations.play('show');
+}
+
+function add_squid(x_coord, y_coord) {
+	var squid = game.add.sprite(x_coord, y_coord, 'squid');
+	squid.events.onAddedToGroup.add(added_squid, this);
+	squids.add(squid);
+	//var squid = squids.create(x_coord, y_coord, 'squid');
+	squid.checkWorldBounds = true;
+	//squid.angle = 90;
+	squid.outOfBoundsKill = true;
+	squid.animations.add('swim', [0, 1, 2, 3, 4], 12, true);
+	squid.animations.play('swim');
+	
+}
+
+function added_squid(){
+	console.log("added a squid");
+	game.time.events.add(Phaser.Timer.SECOND * 5, add_ink, this);
+}
 
 function numberWithCommas(n) {
     var parts=n.toString().split(".");
@@ -306,6 +342,17 @@ function update_physics() {
         item.body.acceleration.y = acceleration;
     }, this);
 
+	inks.forEach(function(item) {
+        item.body.velocity.y = speed;
+        item.body.acceleration.y = acceleration;
+    }, this);
+
+	squids.forEach(function(item) {
+		item.body.velocity.y = (-0.1)*speed;
+		item.body.acceleration.y = -acceleration;
+		//console.log("Squid speed" + item.body.velocity.x);
+	}, this);
+	
     // Game over
     if (altitude < 0) {
         console.log("GAME OVER!"); 
@@ -380,6 +427,12 @@ function update() {
             && altitude > 0) {
         add_krabby_patty();
     }
+	
+	
+	if(altitude % 1800 === 0  && altitude > 999)
+	{
+		add_squid(0, 600);
+	}
 
     if (game.time.time %
             (10 + Math.floor(Math.random() * 65)) === 0
@@ -436,12 +489,12 @@ function update() {
                                 (energy / ENERGY_CAP) * 100).toString() + "%";
         energy_text.text = energy_percent;
 
-        if (DEBUG) {
+        /*if (DEBUG) {
             console.log(
                 '<DEBUG>: Speed: ' + speed.toString() +
                 ', Energy: ' + energy.toString());
             console.log(energy_percent);
-        }
+        }*/
     }
 
     energy_bar.width = (energy / ENERGY_CAP) * 212;
@@ -458,6 +511,7 @@ function collect_patty(player, patty) {
     energy = Math.min(energy, ENERGY_CAP);
 
     patty_boost_timer = 15;
+	
 }
 
 
