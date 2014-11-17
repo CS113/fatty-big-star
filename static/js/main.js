@@ -11,14 +11,14 @@ var DEBUG = true,  // toggle this variable
     GREEN_HEX = '#83F52C';
 
 var game = new Phaser.Game(
-    GAME_WIDTH,
-    GAME_HEIGHT,
-    Phaser.AUTO,
-    'game_box',
-    { preload: preload,
-      create: create,
-      update: update }
-);
+        GAME_WIDTH,
+        GAME_HEIGHT,
+        Phaser.AUTO,
+        'game_box',
+        { preload: preload,
+            create: create,
+    update: update }
+    );
 
 
 // Load static assets
@@ -34,8 +34,10 @@ function preload() {
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
+    game.load.spritesheet('squid', 'static/imgs/Squid.png', 115, 62);
+    game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
 
-	game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
+    game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
 }
 
 
@@ -57,6 +59,8 @@ var _____,
     bubbles,
     aura,
     energy_bar,
+    inks,
+    squids,
 
     // Text
     altitude_text,
@@ -90,8 +94,8 @@ function create() {
     // Enable physics for in-game entities
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
-	// Add background sound
-	bg_music = game.add.audio('background_music');
+    // Add background sound
+    bg_music = game.add.audio('background_music');
     bg_music.play();
 
     // Add ocean background
@@ -103,9 +107,9 @@ function create() {
     platforms.enableBody = true;
     // The first platform is just the ground
     var ground = platforms.create(
-                    0,
-                    game.world.height - GROUND_HEIGHT,
-                    'ground');
+            0,
+            game.world.height - GROUND_HEIGHT,
+            'ground');
 
     // Scale it to fit the width of the game
     // (the original sprite is 400x32 in size)
@@ -117,9 +121,9 @@ function create() {
 
     // Add the main avatar, Patrick!
     player = game.add.sprite(
-                game.world.width / 2,
-                game.world.height - 150,
-                'patrick');
+            game.world.width / 2,
+            game.world.height - 150,
+            'patrick');
     game.physics.arcade.enable(player);
     // player.body.bounce.y = 0.2;
     // player.body.gravity.y = 300;
@@ -131,8 +135,8 @@ function create() {
 
     aura = game.add.sprite(50, 50, 'aura_good');
     aura.animations.add('revive', 
-                        [0, 1, 2, 3, 4, 5, 6, 7,
-                        8, 9, 10, 11, 12]);
+            [0, 1, 2, 3, 4, 5, 6, 7,
+            8, 9, 10, 11, 12]);
 
     aura.scale.setTo(0.5, 0.5);
     aura.anchor.setTo(0.5, 0.5);
@@ -140,6 +144,12 @@ function create() {
 
     jellyfishes = game.add.group();
     jellyfishes.enableBody = true;
+
+    inks = game.add.group();
+    inks.enableBody = true;
+
+    squids = game.add.group();
+    squids.enableBody = true;
 
     patties = game.add.group();
     patties.enableBody = true;
@@ -149,35 +159,35 @@ function create() {
 
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
-                        0.5 * game.world.width - 20,
-                        10, 
-                        'patty');
+            0.5 * game.world.width - 20,
+            10, 
+            'patty');
     first_patty.scale.setTo(0.4, 0.4);
     first_patty.body.gravity.y = 600;
 
     empty_energy_bar = game.add.sprite(game.width - (216 + 10), 10,
-                                       'empty_energy_bar');
+            'empty_energy_bar');
     empty_energy_bar.scale.setTo(1, 0.5);
 
     energy_bar = game.add.sprite(game.width - (216 + 10), 10,
-                                 'energy_bar');
+            'energy_bar');
     energy_bar.scale.setTo(1, 0.5);
 
     altitude_text = game.add.text(
-        10, 
-        10,
-        'Altitude: 0', 
-        { font: '20px ' + GAME_TEXT,
-          fill: BLACK_HEX }
-    );
+            10, 
+            10,
+            'Altitude: 0', 
+            { font: '20px ' + GAME_TEXT,
+                fill: BLACK_HEX }
+            );
 
     energy_text = game.add.text(
-        game.width - (212/2 + 20), 
-        12,
-        '0%', 
-        { font: '11px ' + GAME_TEXT,
-          fill: GREEN_HEX }
-    );
+            game.width - (212/2 + 20), 
+            12,
+            '0%', 
+            { font: '11px ' + GAME_TEXT,
+                fill: GREEN_HEX }
+            );
 
     starting_time = game.time.time;
     elapsed = game.time.time - starting_time;
@@ -189,9 +199,9 @@ function create() {
 
 function add_krabby_patty() {
     var patty = patties.create(
-                    Math.floor(Math.random() * game.world.width),
-                    0,
-                    'patty');
+            Math.floor(Math.random() * game.world.width),
+            0,
+            'patty');
     patty.scale.setTo(0.4, 0.4);
 }
 
@@ -209,8 +219,8 @@ function add_grouped(entity_name) {
     var max_jellyfish_group = 20;
     var max_bubble_group = 50;
     var max_group;
-	
-	/*Why not make this a dict?*/
+
+    /*Why not make this a dict?*/
     if (entity_name == 'bubble') {
         max_group = max_bubble_group;
     } else if (entity_name = 'jellyfish') {
@@ -229,10 +239,10 @@ function add_grouped(entity_name) {
         /*Why not make this a dict?*/
         if (entity_name == 'bubble') {
             add_bubble(x_coord + x_variance,
-                       y_coord + y_variance);
+                    y_coord + y_variance);
         } else if (entity_name == 'jellyfish') {
             add_jellyfish(x_coord + x_variance,
-                          y_coord + y_variance);
+                    y_coord + y_variance);
         }
     }
 }
@@ -262,12 +272,38 @@ function add_jellyfish(x_coord, y_coord) {
     jelly.outOfBoundsKill = true;
     jelly.animations.add('swim', [0, 1, 2, 3], 12, true);
     jelly.animations.play('swim');
-	jelly.oscl_coef = Math.random() * (100) + 200;
-	jelly.x_speed = jelly.oscl_coef - 100;
+    jelly.oscl_coef = Math.random() * (100) + 200;
+    jelly.x_speed = jelly.oscl_coef - 100;
     // Start each jellyfish at a random animation to look more real
     jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
 }
 
+function add_ink() {
+    var ink = inks.create(player.x-300, -200, 'ink');
+
+    ink.checkWorldBounds = true;
+    ink.outOfBoundsKill = true;
+    ink.animations.add('show', [0] , 12, true);
+    ink.animations.play('show');
+}
+
+function add_squid(x_coord, y_coord) {
+    var squid = game.add.sprite(x_coord, y_coord, 'squid');
+    squid.events.onAddedToGroup.add(added_squid, this);
+    squids.add(squid);
+    //var squid = squids.create(x_coord, y_coord, 'squid');
+    squid.checkWorldBounds = true;
+    //squid.angle = 90;
+    squid.outOfBoundsKill = true;
+    squid.animations.add('swim', [0, 1, 2, 3, 4], 12, true);
+    squid.animations.play('swim');
+
+}
+
+function added_squid(){
+    console.log("added a squid");
+    game.time.events.add(Phaser.Timer.SECOND * 5, add_ink, this);
+}
 
 function numberWithCommas(n) {
     var parts=n.toString().split(".");
@@ -276,7 +312,7 @@ function numberWithCommas(n) {
 
 
 function update_physics() {
-    
+
 
     // Update aura positions to patrick, this should be done elsewhere!
     aura.x = player.x;
@@ -289,7 +325,7 @@ function update_physics() {
 
     jellyfishes.forEach(function(item) {
         item.body.velocity.x = item.x_speed;
-		item.body.velocity.y = item.oscl_coef * Math.sin(game.time.now / 100) + speed;
+        item.body.velocity.y = item.oscl_coef * Math.sin(game.time.now / 100) + speed;
     }, this);
 
     bubbles.forEach(function(item) {
@@ -306,6 +342,17 @@ function update_physics() {
         item.body.acceleration.y = acceleration;
     }, this);
 
+    inks.forEach(function(item) {
+        item.body.velocity.y = speed;
+        item.body.acceleration.y = acceleration;
+    }, this);
+
+    squids.forEach(function(item) {
+        item.body.velocity.y = (-0.1)*speed;
+        item.body.acceleration.y = -acceleration;
+        //console.log("Squid speed" + item.body.velocity.x);
+    }, this);
+
     // Game over
     if (altitude < 0) {
         console.log("GAME OVER!"); 
@@ -319,14 +366,14 @@ function update_physics() {
         speed = 400;
         if (patty_boost_timer > 0) {
             speed = speed + PATTY_SPEED_BOOST;
-			//acceleration += PATTY_SPEED_BOOST;
+            //acceleration += PATTY_SPEED_BOOST;
             patty_boost_timer--;
         }
         energy--;
     } else if (altitude > 0) {
         speed -= 30;
     }
-	altitude += Math.floor(speed * (1/60));
+    altitude += Math.floor(speed * (1/60));
     // Reset the player's horiz velocity (movement)
     player.body.velocity.x = 0;
 }
@@ -357,15 +404,15 @@ function update() {
     game.physics.arcade.collide(jellyfishes, platforms);
     game.physics.arcade.collide(patties, platforms);
     game.physics.arcade.collide(player,
-                                patties,
-                                collect_patty,
-                                null,
-                                this);
+            patties,
+            collect_patty,
+            null,
+            this);
     game.physics.arcade.overlap(player,
-                                jellyfishes,
-                                hit_jellyfish,
-                                null,
-                                this);
+            jellyfishes,
+            hit_jellyfish,
+            null,
+            this);
 
     // ===============================
     // ==== Add & delete entities ====
@@ -373,23 +420,29 @@ function update() {
 
     if (game.time.time % (50 + Math.floor(Math.random() * 100)) === 0
             && altitude > 0) {
-        add_grouped('jellyfish');
-    }
+                add_grouped('jellyfish');
+            }
 
     if (game.time.time % 15 === 0
             && altitude > 0) {
-        add_krabby_patty();
+                add_krabby_patty();
+            }
+
+
+    if(altitude % 1800 === 0  && altitude > 999)
+    {
+        add_squid(0, 600);
     }
 
     if (game.time.time %
             (10 + Math.floor(Math.random() * 65)) === 0
             && altitude > 0) {
-        add_grouped('bubble');
-    }
+                add_grouped('bubble');
+            }
 
-    // =================
-    // ==== Physics ====
-    // =================
+    // ==================
+    // ===== Physics ====
+    // ==================
 
     update_physics();
 
@@ -424,22 +477,22 @@ function update() {
         player.animations.stop();
         player.frame = 2;
     }
-    
+
     // ===========================
     // ==== Text and counters ====
     // ===========================
     if (game.time.time % 4 === 0) {
-		altitude_as_string = numberWithCommas(altitude);
+        altitude_as_string = numberWithCommas(altitude);
         altitude_text.text = 'Altitude: ' + altitude_as_string;
 
         var energy_percent = Math.floor(
-                                (energy / ENERGY_CAP) * 100).toString() + "%";
+                (energy / ENERGY_CAP) * 100).toString() + "%";
         energy_text.text = energy_percent;
 
         if (DEBUG) {
             console.log(
-                '<DEBUG>: Speed: ' + speed.toString() +
-                ', Energy: ' + energy.toString());
+                    '<DEBUG>: Speed: ' + speed.toString() +
+                    ', Energy: ' + energy.toString());
             console.log(energy_percent);
         }
     }
@@ -458,6 +511,7 @@ function collect_patty(player, patty) {
     energy = Math.min(energy, ENERGY_CAP);
 
     patty_boost_timer = 15;
+
 }
 
 
@@ -470,10 +524,10 @@ function hit_jellyfish(player, jellyfish) {
 function game_over() {
     game.add.sprite(0, 0, 'black_bg'); 
     var game_over_text = game.add.text(
-        game.width / 2 - 100, 
-        game.height/2,
-        'GAME OVER', 
-        { font: '40px ' + GAME_TEXT,
-          fill: '#FFF' }
-    );
+            game.width / 2 - 100, 
+            game.height/2,
+            'GAME OVER', 
+            { font: '40px ' + GAME_TEXT,
+                fill: '#FFF' }
+            );
 }
