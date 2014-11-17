@@ -440,9 +440,9 @@ function update() {
         add_grouped('bubble');
     }
 
-    // ===================
-    // ===== Physics =====
-    // ===================
+    // ==================
+    // ===== Physics ====
+    // ==================
 
     update_physics();
 
@@ -489,12 +489,12 @@ function update() {
                                 (energy / ENERGY_CAP) * 100).toString() + "%";
         energy_text.text = energy_percent;
 
-        /*if (DEBUG) {
+        if (DEBUG) {
             console.log(
                 '<DEBUG>: Speed: ' + speed.toString() +
                 ', Energy: ' + energy.toString());
             console.log(energy_percent);
-        }*/
+        }
     }
 
     energy_bar.width = (energy / ENERGY_CAP) * 212;
