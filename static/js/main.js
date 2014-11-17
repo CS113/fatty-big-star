@@ -34,6 +34,7 @@ function preload() {
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
+    game.load.spritesheet('shark', 'static/imgs/sharks.png', 103,45);
     game.load.spritesheet('squid', 'static/imgs/Squid.png', 115, 62);
     game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
 
@@ -58,6 +59,7 @@ var _____,
     cursors,
     bubbles,
     aura,
+    sharks,
     energy_bar,
     inks,
     squids,
@@ -153,6 +155,9 @@ function create() {
 
     patties = game.add.group();
     patties.enableBody = true;
+
+    sharks = game.add.group();
+    sharks.enableBody = true;
 
     bubbles = game.add.group();
     bubbles.enableBody = true;
@@ -278,6 +283,20 @@ function add_jellyfish(x_coord, y_coord) {
     jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
 }
 
+function add_shark() {
+    var shark = sharks.create(
+            0,
+            Math.floor(Math.random() * game.world.height),
+            'shark');
+    shark.body.x = shark.body.x + 1;
+    shark.checkWorldBounds = true; 
+    shark.outOfBoundsKill = true;
+    shark.animations.add('swim', [0, 1, 2], 12, true);
+    shark.animations.play('swim');
+
+    // Start each shark at a random animation to look more real
+    shark.animations.currentAnim.frame = Math.floor(Math.random() * 2);
+}
 function add_ink() {
     var ink = inks.create(player.x-300, -200, 'ink');
 
@@ -312,8 +331,6 @@ function numberWithCommas(n) {
 
 
 function update_physics() {
-
-
     // Update aura positions to patrick, this should be done elsewhere!
     aura.x = player.x;
     aura.y = player.y;
@@ -332,6 +349,13 @@ function update_physics() {
         item.body.velocity.y = speed;
         item.body.acceleration.y = acceleration;
         item.angle = item.angle + ((Math.random() <= 0.5) ? 1 : -1);
+    }, this);
+
+    sharks.forEach(function(item) {
+        item.body.velocity.x = speed;
+        item.body.acceleration.x = acceleration;
+        item.body.velocity.y = speed;
+        item.body.acceleration.y = acceleration;
     }, this);
 
     patties.forEach(function(item) {
@@ -418,15 +442,18 @@ function update() {
     // ==== Add & delete entities ====
     // ===============================
 
-    if (game.time.time % (50 + Math.floor(Math.random() * 100)) === 0
-            && altitude > 0) {
-                add_grouped('jellyfish');
-            }
+    if (game.time.time %
+            (50 + Math.floor(Math.random() * 100)) === 0 && altitude > 0) {
+        add_grouped('jellyfish');
+    }
 
-    if (game.time.time % 15 === 0
-            && altitude > 0) {
-                add_krabby_patty();
-            }
+    if (game.time.time % 15 === 0 && altitude > 0) {
+        add_krabby_patty();
+    }
+
+    if (game.time.time % 100 === 0 && altitude > 0) {
+        add_shark();
+    }
 
 
     if(altitude % 1800 === 0  && altitude > 999)
@@ -435,10 +462,9 @@ function update() {
     }
 
     if (game.time.time %
-            (10 + Math.floor(Math.random() * 65)) === 0
-            && altitude > 0) {
-                add_grouped('bubble');
-            }
+            (10 + Math.floor(Math.random() * 65)) === 0 && altitude > 0) {
+        add_grouped('bubble');
+    }
 
     // ==================
     // ===== Physics ====
@@ -511,7 +537,6 @@ function collect_patty(player, patty) {
     energy = Math.min(energy, ENERGY_CAP);
 
     patty_boost_timer = 15;
-
 }
 
 
