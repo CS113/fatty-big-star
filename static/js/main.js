@@ -35,7 +35,7 @@ function preload() {
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
     game.load.spritesheet('shark', 'static/imgs/sharks.png', 103,45);
-    game.load.spritesheet('squid', 'static/imgs/Squid.png', 115, 62);
+    game.load.spritesheet('squid', 'static/imgs/squidsheet.png', 49, 121);
     game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
 
     game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
@@ -67,6 +67,10 @@ var _____,
     // Text
     altitude_text,
     energy_text,
+
+
+    //Timer,
+    squid_timer,
 
     // Music
     bg_music,
@@ -219,7 +223,7 @@ function add_grouped(entity_name) {
     var variance_mapping = {
         'bubble': 100,
         'jellyfish': 250
-    }
+    };
 
     var max_jellyfish_group = 20;
     var max_bubble_group = 50;
@@ -228,7 +232,7 @@ function add_grouped(entity_name) {
     /*Why not make this a dict?*/
     if (entity_name == 'bubble') {
         max_group = max_bubble_group;
-    } else if (entity_name = 'jellyfish') {
+    } else if (entity_name == 'jellyfish') {
         max_group = max_jellyfish_group;
     }
 
@@ -308,25 +312,46 @@ function add_ink() {
 
 function add_squid(x_coord, y_coord) {
     var squid = game.add.sprite(x_coord, y_coord, 'squid');
+    squid.inputEnabled = true;
+
+    squid.events.onInputDown.add(clicked, this);
     squid.events.onAddedToGroup.add(added_squid, this);
+    squid.events.onOutOfBounds.add(squid_left, this);
     squids.add(squid);
-    //var squid = squids.create(x_coord, y_coord, 'squid');
+    // var squid = squids.create(x_coord, y_coord, 'squid');
     squid.checkWorldBounds = true;
-    //squid.angle = 90;
+    // squid.angle = 90;
     squid.outOfBoundsKill = true;
-    squid.animations.add('swim', [0, 1, 2, 3, 4], 12, true);
+    squid.animations.add('swim', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 12, true);
     squid.animations.play('swim');
 
 }
 
+function squid_left() {
+    game.time.events.remove(squid_timer);
+    squid_timer = undefined;
+}
+
+function clicked(sprite) {
+    console.log("Clicked squid");
+    sprite.destroy();
+    game.time.events.remove(squid_timer);
+    squid_timer = undefined;
+}
+
 function added_squid(){
     console.log("added a squid");
-    game.time.events.add(Phaser.Timer.SECOND * 5, add_ink, this);
+    if (squid_timer === undefined) {
+        squid_timer = game.time.events.loop(
+                Phaser.Timer.SECOND * 2.5 , add_ink, this);
+    }
+
 }
 
 function numberWithCommas(n) {
     var parts=n.toString().split(".");
-    return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + (parts[1] ? "." + parts[1] : "");
+    return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") +
+                            (parts[1] ? "." + parts[1] : "");
 }
 
 
@@ -397,7 +422,9 @@ function update_physics() {
     } else if (altitude > 0) {
         speed -= 30;
     }
+
     altitude += Math.floor(speed * (1/60));
+
     // Reset the player's horiz velocity (movement)
     player.body.velocity.x = 0;
 }
@@ -406,7 +433,7 @@ function update_physics() {
 
 /*
  * IMPORTANT: Because the update function's contents vary in
- * functionality and depend on eachother, the seperate functions
+ * functionality and depend on each other, the separate functions
  * must be divided in sequences.
  *
  * 1. Update all game clocks
@@ -444,8 +471,8 @@ function update() {
 
     if (game.time.time %
             (50 + Math.floor(Math.random() * 100)) === 0 && altitude > 0) {
-        add_grouped('jellyfish');
-    }
+                add_grouped('jellyfish');
+            }
 
     if (game.time.time % 15 === 0 && altitude > 0) {
         add_krabby_patty();
@@ -455,16 +482,14 @@ function update() {
         add_shark();
     }
 
-
-    if(altitude % 1800 === 0  && altitude > 999)
-    {
-        add_squid(0, 600);
+    if (altitude % 5400 === 0  && altitude > 999) {
+        add_squid(50 + Math.floor(Math.random() * 650), 600);
     }
 
     if (game.time.time %
             (10 + Math.floor(Math.random() * 65)) === 0 && altitude > 0) {
-        add_grouped('bubble');
-    }
+                add_grouped('bubble');
+            }
 
     // ==================
     // ===== Physics ====
@@ -483,7 +508,6 @@ function update() {
         player.animations.play('flying');
     } else {
         player.animations.stop();
-        // player.animations.play('walking');
     }
 
     if (cursors.left.isDown) {
