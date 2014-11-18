@@ -66,6 +66,10 @@ var _____,
     altitude_text,
     energy_text,
 
+
+	//Timer,
+	squid_timer,
+	
     // Music
     bg_music,
 
@@ -289,7 +293,11 @@ function add_ink() {
 
 function add_squid(x_coord, y_coord) {
     var squid = game.add.sprite(x_coord, y_coord, 'squid');
+	squid.inputEnabled = true;
+	
+	squid.events.onInputDown.add(clicked, this);
     squid.events.onAddedToGroup.add(added_squid, this);
+	squid.events.onOutOfBounds.add(squid_left, this);
     squids.add(squid);
     //var squid = squids.create(x_coord, y_coord, 'squid');
     squid.checkWorldBounds = true;
@@ -300,9 +308,24 @@ function add_squid(x_coord, y_coord) {
 
 }
 
+function squid_left() {
+	game.time.events.remove(squid_timer);
+	squid_timer = undefined;
+}
+
+function clicked(sprite) {
+	console.log("Clicked squid");
+	sprite.destroy();
+	game.time.events.remove(squid_timer);
+	squid_timer = undefined;
+}
+
 function added_squid(){
     console.log("added a squid");
-    game.time.events.add(Phaser.Timer.SECOND * 5, add_ink, this);
+	if(squid_timer === undefined){
+	squid_timer = game.time.events.loop(Phaser.Timer.SECOND * 2.5 , add_ink, this);
+}
+	
 }
 
 function numberWithCommas(n) {
@@ -373,7 +396,9 @@ function update_physics() {
     } else if (altitude > 0) {
         speed -= 30;
     }
+	
     altitude += Math.floor(speed * (1/60));
+	
     // Reset the player's horiz velocity (movement)
     player.body.velocity.x = 0;
 }
@@ -382,7 +407,7 @@ function update_physics() {
 
 /*
  * IMPORTANT: Because the update function's contents vary in
- * functionality and depend on eachother, the seperate functions
+ * functionality and depend on each other, the separate functions
  * must be divided in sequences.
  *
  * 1. Update all game clocks
@@ -430,9 +455,9 @@ function update() {
             }
 
 
-    if(altitude % 900 === 0  && altitude > 999)
+    if(altitude % 5400 === 0  && altitude > 999)
     {
-        add_squid(0, 600);
+        add_squid( 50 + Math.floor(Math.random() * 650), 600);
     }
 
     if (game.time.time %
