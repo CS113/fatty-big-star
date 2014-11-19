@@ -419,8 +419,10 @@ function update_physics() {
         item.body.velocity.y = speed_coeff  * speed;
     }, this);
 
-    // Game over
-    if (altitude < 0) {
+    // Game over when Patrick has been falling for a little bit
+    // Safe assumption because all entities are killed after
+    // they fall off the map, Patrick has no way of getting up
+    if (speed < -1500 || altitude < 0) {
         console.log("GAME OVER!"); 
         game_over();
         // lmfao .. we lazy
