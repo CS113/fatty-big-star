@@ -96,6 +96,13 @@ function update_timer() {
 }
 
 
+/*
+ * NOTE: Entities are rendered in the order in which their
+ * sprites and groups are declared. e.g. `inks` is intentionally
+ * at the very end because we want the ink to be displayed over
+ * other other entities.
+ *
+ */
 function create() {
     // Enable physics for in-game entities
     game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -153,9 +160,6 @@ function create() {
     jellyfishes = game.add.group();
     jellyfishes.enableBody = true;
 
-    inks = game.add.group();
-    inks.enableBody = true;
-
     squids = game.add.group();
     squids.enableBody = true;
 
@@ -167,6 +171,9 @@ function create() {
 
     bubbles = game.add.group();
     bubbles.enableBody = true;
+
+    inks = game.add.group();
+    inks.enableBody = true;
 
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
@@ -309,7 +316,7 @@ function add_shark() {
 
 
 function add_ink() {
-    var ink = inks.create(player.x-300, -200, 'ink');
+    var ink = inks.create(player.x - 300, -200, 'ink');
 
     ink.checkWorldBounds = true;
     ink.outOfBoundsKill = true;
@@ -504,10 +511,9 @@ function update() {
         add_squid(50 + Math.floor(Math.random() * 650), 600);
     }
 
-    if (game.time.time %
-            (10 + Math.floor(Math.random() * 65)) === 0 && altitude > 0) {
-                add_grouped('bubble');
-            }
+    if (game.time.time % (10 + Math.floor(Math.random() * 65)) === 0 && altitude > 0) {
+        add_grouped('bubble');
+    }
 
     // ==================
     // ===== Physics ====
