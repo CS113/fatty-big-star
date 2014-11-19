@@ -326,9 +326,7 @@ function add_squid(x_coord, y_coord) {
     squid.events.onAddedToGroup.add(added_squid, this);
     squid.events.onOutOfBounds.add(squid_left, this);
     squids.add(squid);
-    // var squid = squids.create(x_coord, y_coord, 'squid');
     squid.checkWorldBounds = true;
-    // squid.angle = 90;
     squid.outOfBoundsKill = true;
     squid.animations.add('swim', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 12, true);
     squid.animations.play('swim');
@@ -340,6 +338,7 @@ function squid_left() {
     game.time.events.remove(squid_timer);
     squid_timer = undefined;
 }
+
 
 function clicked(sprite) {
     console.log("Clicked squid");
@@ -583,7 +582,7 @@ function collect_patty(player, patty) {
 
 function hit_jellyfish(player, jellyfish) {
     jellyfish.kill();
-    // TODO:
+    energy = 0;
 }
 
 
