@@ -235,35 +235,26 @@ function add_grouped(entity_name) {
         'bubble': 100,
         'jellyfish': 250
     };
-
-    var max_jellyfish_group = 20;
-    var max_bubble_group = 50;
-    var max_group;
-
-    /*Why not make this a dict?*/
-    if (entity_name == 'bubble') {
-        max_group = max_bubble_group;
-    } else if (entity_name == 'jellyfish') {
-        max_group = max_jellyfish_group;
+    var spawn_mapping = {
+        'bubble': add_bubble,
+        'jellyfish': add_jellyfish
+    }
+    var max_mapping = {
+        'bubble': 50,
+        'jellyfish': 20
     }
 
     var x_coord = Math.floor(Math.random() * game.world.width);
     var y_coord = 0;
-    var n = Math.floor(4 + (Math.random() * max_group));
+    var n = Math.floor(4 + (Math.random() * max_mapping[entity_name]));
 
     for (var i = 0; i < n; i++) {
         var pos_neg = Math.random() <= 0.5 ? -1 : 1;
         var x_variance = pos_neg * Math.random() * variance_mapping[entity_name];
         var y_variance = -1 * Math.random() * variance_mapping[entity_name];
-        // console.log(variance_mapping[entity_name]);
-        /*Why not make this a dict?*/
-        if (entity_name == 'bubble') {
-            add_bubble(x_coord + x_variance,
-                    y_coord + y_variance);
-        } else if (entity_name == 'jellyfish') {
-            add_jellyfish(x_coord + x_variance,
-                    y_coord + y_variance);
-        }
+
+        spawn_mapping[entity_name](
+            x_coord + x_variance, y_coord + y_variance);
     }
 }
 
