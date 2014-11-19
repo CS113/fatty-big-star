@@ -102,7 +102,9 @@ function create() {
 
     // Add background sound
     bg_music = game.add.audio('background_music');
-    bg_music.play();
+    if (!DEBUG) {
+        bg_music.play();
+    }
 
     // Add ocean background
     game.add.sprite(0, 0, 'ocean');
@@ -287,6 +289,7 @@ function add_jellyfish(x_coord, y_coord) {
     jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
 }
 
+
 function add_shark() {
     var shark = sharks.create(
             0,
@@ -301,6 +304,8 @@ function add_shark() {
     // Start each shark at a random animation to look more real
     shark.animations.currentAnim.frame = Math.floor(Math.random() * 2);
 }
+
+
 function add_ink() {
     var ink = inks.create(player.x-300, -200, 'ink');
 
@@ -309,6 +314,7 @@ function add_ink() {
     ink.animations.add('show', [0] , 12, true);
     ink.animations.play('show');
 }
+
 
 function add_squid(x_coord, y_coord) {
     var squid = game.add.sprite(x_coord, y_coord, 'squid');
@@ -327,6 +333,7 @@ function add_squid(x_coord, y_coord) {
 
 }
 
+
 function squid_left() {
     game.time.events.remove(squid_timer);
     squid_timer = undefined;
@@ -339,6 +346,7 @@ function clicked(sprite) {
     squid_timer = undefined;
 }
 
+
 function added_squid(){
     console.log("added a squid");
     if (squid_timer === undefined) {
@@ -347,6 +355,7 @@ function added_squid(){
     }
 
 }
+
 
 function numberWithCommas(n) {
     var parts=n.toString().split(".");
@@ -397,9 +406,16 @@ function update_physics() {
     }, this);
 
     squids.forEach(function(item) {
-        item.body.velocity.y = (-0.1)*speed;
-        item.body.acceleration.y = -acceleration;
-        //console.log("Squid speed" + item.body.velocity.x);
+        // Fix squid physics effect. Squids are unique because they 
+        // are naturally floating upwards, not downwards.
+    
+        // If our speed is negative (falling) the squid should quickly
+        // zoom up, not the before action (fall down slowly)
+        var speed_coeff = -1;
+        if (speed > 0) {
+            speed_coeff = -0.1;
+        }
+        item.body.velocity.y = speed_coeff  * speed;
     }, this);
 
     // Game over
@@ -428,7 +444,6 @@ function update_physics() {
     // Reset the player's horiz velocity (movement)
     player.body.velocity.x = 0;
 }
-
 
 
 /*
