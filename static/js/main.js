@@ -213,6 +213,8 @@ function add_krabby_patty() {
             Math.floor(Math.random() * game.world.width),
             0,
             'patty');
+    patty.checkWorldBounds = true; 
+    patty.outOfBoundsKill = true;
     patty.scale.setTo(0.4, 0.4);
 }
 
