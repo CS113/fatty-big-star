@@ -177,7 +177,9 @@ function create() {
             'patty');
     first_patty.scale.setTo(0.4, 0.4);
     first_patty.body.gravity.y = 600;
-
+	
+	add_sound_control_button();
+	
     empty_energy_bar = game.add.sprite(game.width - (216 + 10), 10,
             'empty_energy_bar');
     empty_energy_bar.scale.setTo(1, 0.5);
@@ -214,7 +216,7 @@ function add_sound_control_button() {
 	sound_off_button.width = 25;
 	sound_off_button.height = 25;
 	
-	sound_on_button = game.add.sprite(game.width - 80, 40, 'sound_on_button');
+	sound_on_button = game.add.sprite(game.width - 50, 40, 'sound_on_button');
 	sound_on_button.width = 0;
 	sound_on_button.height = 25;
 
@@ -512,8 +514,6 @@ function update() {
     // ===============================
     // ==== Add & delete entities ====
     // ===============================
-
-	add_sound_control_button();
 	
     if (game.time.time %
             (50 + Math.floor(Math.random() * 100)) === 0 && altitude > 0) {
