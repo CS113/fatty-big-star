@@ -104,9 +104,9 @@ function create() {
 
     // Add background sound
     bg_music = game.add.audio('background_music');
-    if (!DEBUG) {
+    //if (!DEBUG) {
         bg_music.play();
-    }
+    //}
 
     // Add ocean background
     game.add.sprite(0, 0, 'ocean');
@@ -210,15 +210,32 @@ function create() {
 }
 
 function add_sound_control_button() {
-    sound_off_button = game.add.sprite(game.width - 50, 40, 'sound_off_button')
-	sound_off_button.scale.setTo(0.15, 0.15);
+    sound_off_button = game.add.sprite(game.width - 50, 40, 'sound_off_button');
+	sound_off_button.width = 25;
+	sound_off_button.height = 25;
 	
-	sound_on_button = game.add.sprite(game.width - 50, 40, 'sound_on_button')
-	sound_on_button.scale.setTo(0.15, 0.15);
-	
+	sound_on_button = game.add.sprite(game.width - 80, 40, 'sound_on_button');
+	sound_on_button.width = 0;
+	sound_on_button.height = 25;
+
+    sound_off_button.inputEnabled = true;
+	sound_on_button.inputEnabled = true;
+
+    sound_off_button.events.onInputDown.add(sound_off, this);
+    sound_on_button.events.onInputDown.add(sound_on, this);
+}
+
+function sound_off() {
+    bg_music.volume = 0;
+    sound_off_button.width = 0;
+	sound_on_button.width = 25;
+}
+
+function sound_on() {
+    bg_music.volume = 1;
+    sound_off_button.width = 25;
 	sound_on_button.width = 0;
 }
-	
 
 function add_krabby_patty() {
     var patty = patties.create(
