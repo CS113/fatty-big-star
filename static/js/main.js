@@ -30,6 +30,8 @@ function preload() {
     game.load.image('bubble', 'static/imgs/bubble.png');
     game.load.image('energy_bar', 'static/imgs/energy_bar.png');
     game.load.image('empty_energy_bar', 'static/imgs/empty_energy_bar.png');
+	game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
+	game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
 
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
@@ -207,6 +209,16 @@ function create() {
     cursors = game.input.keyboard.createCursorKeys();
 }
 
+function add_sound_control_button() {
+    sound_off_button = game.add.sprite(game.width - 50, 40, 'sound_off_button')
+	sound_off_button.scale.setTo(0.15, 0.15);
+	
+	sound_on_button = game.add.sprite(game.width - 50, 40, 'sound_on_button')
+	sound_on_button.scale.setTo(0.15, 0.15);
+	
+	sound_on_button.width = 0;
+}
+	
 
 function add_krabby_patty() {
     var patty = patties.create(
@@ -484,6 +496,8 @@ function update() {
     // ==== Add & delete entities ====
     // ===============================
 
+	add_sound_control_button();
+	
     if (game.time.time %
             (50 + Math.floor(Math.random() * 100)) === 0 && altitude > 0) {
                 add_grouped('jellyfish');
