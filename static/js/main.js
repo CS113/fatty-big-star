@@ -96,6 +96,13 @@ function update_timer() {
 }
 
 
+/*
+ * NOTE: Entities are rendered in the order in which their
+ * sprites and groups are declared. e.g. `inks` is intentionally
+ * at the very end because we want the ink to be displayed over
+ * other other entities.
+ *
+ */
 function create() {
     // Enable physics for in-game entities
     game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -153,9 +160,6 @@ function create() {
     jellyfishes = game.add.group();
     jellyfishes.enableBody = true;
 
-    inks = game.add.group();
-    inks.enableBody = true;
-
     squids = game.add.group();
     squids.enableBody = true;
 
@@ -167,6 +171,9 @@ function create() {
 
     bubbles = game.add.group();
     bubbles.enableBody = true;
+
+    inks = game.add.group();
+    inks.enableBody = true;
 
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
@@ -213,6 +220,8 @@ function add_krabby_patty() {
             Math.floor(Math.random() * game.world.width),
             0,
             'patty');
+    patty.checkWorldBounds = true; 
+    patty.outOfBoundsKill = true;
     patty.scale.setTo(0.4, 0.4);
 }
 
@@ -226,35 +235,26 @@ function add_grouped(entity_name) {
         'bubble': 100,
         'jellyfish': 250
     };
-
-    var max_jellyfish_group = 20;
-    var max_bubble_group = 50;
-    var max_group;
-
-    /*Why not make this a dict?*/
-    if (entity_name == 'bubble') {
-        max_group = max_bubble_group;
-    } else if (entity_name == 'jellyfish') {
-        max_group = max_jellyfish_group;
+    var spawn_mapping = {
+        'bubble': add_bubble,
+        'jellyfish': add_jellyfish
+    }
+    var max_mapping = {
+        'bubble': 50,
+        'jellyfish': 20
     }
 
     var x_coord = Math.floor(Math.random() * game.world.width);
     var y_coord = 0;
-    var n = Math.floor(4 + (Math.random() * max_group));
+    var n = Math.floor(4 + (Math.random() * max_mapping[entity_name]));
 
     for (var i = 0; i < n; i++) {
         var pos_neg = Math.random() <= 0.5 ? -1 : 1;
         var x_variance = pos_neg * Math.random() * variance_mapping[entity_name];
         var y_variance = -1 * Math.random() * variance_mapping[entity_name];
-        // console.log(variance_mapping[entity_name]);
-        /*Why not make this a dict?*/
-        if (entity_name == 'bubble') {
-            add_bubble(x_coord + x_variance,
-                    y_coord + y_variance);
-        } else if (entity_name == 'jellyfish') {
-            add_jellyfish(x_coord + x_variance,
-                    y_coord + y_variance);
-        }
+
+        spawn_mapping[entity_name](
+            x_coord + x_variance, y_coord + y_variance);
     }
 }
 
@@ -307,7 +307,7 @@ function add_shark() {
 
 
 function add_ink() {
-    var ink = inks.create(player.x-300, -200, 'ink');
+    var ink = inks.create(player.x - 300, -200, 'ink');
 
     ink.checkWorldBounds = true;
     ink.outOfBoundsKill = true;
@@ -324,9 +324,7 @@ function add_squid(x_coord, y_coord) {
     squid.events.onAddedToGroup.add(added_squid, this);
     squid.events.onOutOfBounds.add(squid_left, this);
     squids.add(squid);
-    // var squid = squids.create(x_coord, y_coord, 'squid');
     squid.checkWorldBounds = true;
-    // squid.angle = 90;
     squid.outOfBoundsKill = true;
     squid.animations.add('swim', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 12, true);
     squid.animations.play('swim');
@@ -338,6 +336,7 @@ function squid_left() {
     game.time.events.remove(squid_timer);
     squid_timer = undefined;
 }
+
 
 function clicked(sprite) {
     console.log("Clicked squid");
@@ -418,8 +417,10 @@ function update_physics() {
         item.body.velocity.y = speed_coeff  * speed;
     }, this);
 
-    // Game over
-    if (altitude < 0) {
+    // Game over when Patrick has been falling for a little bit
+    // Safe assumption because all entities are killed after
+    // they fall off the map, Patrick has no way of getting up
+    if (speed < -1500 || altitude < 0) {
         console.log("GAME OVER!"); 
         game_over();
         // lmfao .. we lazy
@@ -501,10 +502,9 @@ function update() {
         add_squid(50 + Math.floor(Math.random() * 650), 600);
     }
 
-    if (game.time.time %
-            (10 + Math.floor(Math.random() * 65)) === 0 && altitude > 0) {
-                add_grouped('bubble');
-            }
+    if (game.time.time % (10 + Math.floor(Math.random() * 65)) === 0 && altitude > 0) {
+        add_grouped('bubble');
+    }
 
     // ==================
     // ===== Physics ====
@@ -581,7 +581,7 @@ function collect_patty(player, patty) {
 
 function hit_jellyfish(player, jellyfish) {
     jellyfish.kill();
-    // TODO:
+    energy = 0;
 }
 
 
