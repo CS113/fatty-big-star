@@ -30,8 +30,8 @@ function preload() {
     game.load.image('bubble', 'static/imgs/bubble.png');
     game.load.image('energy_bar', 'static/imgs/energy_bar.png');
     game.load.image('empty_energy_bar', 'static/imgs/empty_energy_bar.png');
-	game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
-	game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
+    game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
+    game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
 
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
@@ -104,9 +104,9 @@ function create() {
 
     // Add background sound
     bg_music = game.add.audio('background_music');
-    //if (!DEBUG) {
+    if (!DEBUG) {
         bg_music.play();
-    //}
+    }
 
     // Add ocean background
     game.add.sprite(0, 0, 'ocean');
