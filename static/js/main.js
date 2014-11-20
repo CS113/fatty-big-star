@@ -178,7 +178,7 @@ function create() {
     first_patty.scale.setTo(0.4, 0.4);
     first_patty.body.gravity.y = 600;
 	
-	add_sound_control_button();
+    add_sound_control_button();
 	
     empty_energy_bar = game.add.sprite(game.width - (216 + 10), 10,
             'empty_energy_bar');
@@ -213,15 +213,15 @@ function create() {
 
 function add_sound_control_button() {
     sound_off_button = game.add.sprite(game.width - 50, 40, 'sound_off_button');
-	sound_off_button.width = 25;
-	sound_off_button.height = 25;
+    sound_off_button.width = 25;
+    sound_off_button.height = 25;
 	
-	sound_on_button = game.add.sprite(game.width - 50, 40, 'sound_on_button');
-	sound_on_button.width = 0;
-	sound_on_button.height = 25;
+    sound_on_button = game.add.sprite(game.width - 50, 40, 'sound_on_button');
+    sound_on_button.width = 0;
+    sound_on_button.height = 25;
 
     sound_off_button.inputEnabled = true;
-	sound_on_button.inputEnabled = true;
+    sound_on_button.inputEnabled = true;
 
     sound_off_button.events.onInputDown.add(sound_off, this);
     sound_on_button.events.onInputDown.add(sound_on, this);
@@ -230,13 +230,13 @@ function add_sound_control_button() {
 function sound_off() {
     bg_music.volume = 0;
     sound_off_button.width = 0;
-	sound_on_button.width = 25;
+    sound_on_button.width = 25;
 }
 
 function sound_on() {
     bg_music.volume = 1;
     sound_off_button.width = 25;
-	sound_on_button.width = 0;
+    sound_on_button.width = 0;
 }
 
 function add_krabby_patty() {
@@ -514,7 +514,7 @@ function update() {
     // ===============================
     // ==== Add & delete entities ====
     // ===============================
-	
+
     if (game.time.time %
             (50 + Math.floor(Math.random() * 100)) === 0 && altitude > 0) {
                 add_grouped('jellyfish');
