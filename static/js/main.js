@@ -452,7 +452,7 @@ function update_physics() {
             //acceleration += PATTY_SPEED_BOOST;
             patty_boost_timer--;
         }
-        //energy--;
+        energy--;
     } else if (altitude > 0) {
         speed -= 30;
     }
