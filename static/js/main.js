@@ -30,6 +30,7 @@ function preload() {
     game.load.image('bubble', 'static/imgs/bubble.png');
     game.load.image('energy_bar', 'static/imgs/energy_bar.png');
     game.load.image('empty_energy_bar', 'static/imgs/empty_energy_bar.png');
+	game.load.image('clam', 'static/imgs/clam.png');
 
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
@@ -63,6 +64,7 @@ var _____,
     energy_bar,
     inks,
     squids,
+	clams,
 
     // Text
     altitude_text,
@@ -174,6 +176,9 @@ function create() {
 
     inks = game.add.group();
     inks.enableBody = true;
+	
+	clams = game.add.group();
+	clams.enableBody = true;
 
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
@@ -305,6 +310,11 @@ function add_shark() {
     shark.animations.currentAnim.frame = Math.floor(Math.random() * 2);
 }
 
+function add_clam() {
+	var clam = clams.create(player.x - 22.8, 0, 'clam');
+	clam.checkWorldBounds = true;
+	clam.outOfBoundsKill = true;
+}
 
 function add_ink() {
     var ink = inks.create(player.x - 300, -200, 'ink');
@@ -404,6 +414,13 @@ function update_physics() {
         item.body.acceleration.y = acceleration;
     }, this);
 
+	clams.forEach(function(item) {
+		item.scale.setTo(0.4, 0.4);
+		item.body.velocity.y = 1000;
+		item.body.acceleration.y = 500;
+		item.body.gravity.y = 300;
+	}, this);	
+	
     squids.forEach(function(item) {
         // Fix squid physics effect. Squids are unique because they 
         // are naturally floating upwards, not downwards.
@@ -468,6 +485,7 @@ function update() {
     // ==============================
     // ==== Check for collisions ====
     // ==============================
+	game.physics.arcade.collide(clams, platforms);
     game.physics.arcade.collide(jellyfishes, platforms);
     game.physics.arcade.collide(patties, platforms);
     game.physics.arcade.collide(player,
@@ -480,6 +498,11 @@ function update() {
             hit_jellyfish,
             null,
             this);
+	game.physics.arcade.overlap(player,
+			clams,
+			hit_clam,
+			null,
+			this);
 
     // ===============================
     // ==== Add & delete entities ====
@@ -494,8 +517,9 @@ function update() {
         add_krabby_patty();
     }
 
-    if (game.time.time % 100 === 0 && altitude > 0) {
+    if (game.time.time % 96 === 0 && altitude > 0) {
         add_shark();
+		add_clam();
     }
 
     if (altitude % 5400 === 0  && altitude > 999) {
@@ -584,6 +608,11 @@ function hit_jellyfish(player, jellyfish) {
     energy = 0;
 }
 
+function hit_clam(player, clam) {
+	clam.kill();
+	energy = energy - 50;
+	
+}	
 
 function game_over() {
     game.add.sprite(0, 0, 'black_bg'); 
