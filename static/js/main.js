@@ -73,6 +73,7 @@ var _____,
 
     //Timer,
     squid_timer,
+	patty_timer = undefined,
 
     // Music
     bg_music,
@@ -217,6 +218,7 @@ function create() {
 
     // Controls
     cursors = game.input.keyboard.createCursorKeys();
+	
 }
 
 
@@ -528,7 +530,11 @@ function update() {
 			hit_clam,
 			null,
 			this);
-
+	game.physics.arcade.overlap(player,
+		sharks,
+		hit_shark,
+		null,
+		this);
     // ===============================
     // ==== Add & delete entities ====
     // ===============================
@@ -538,8 +544,10 @@ function update() {
                 add_grouped('jellyfish');
             }
 
-    if (game.time.time % 15 === 0 && altitude > 0) {
-        add_krabby_patty();
+    if (altitude > 0 && patty_timer === undefined) {
+        patty_timer = game.time.events.loop(
+                Phaser.Timer.SECOND * 0.33 , add_krabby_patty, this);
+		timer_set = true;
     }
 
     if (game.time.time % 96 === 0 && altitude > 500) {
@@ -643,9 +651,12 @@ function hit_jellyfish(player, jellyfish) {
 function hit_clam(player, clam) {
 	clam.kill();
 	energy = energy - 50;
-	
 }	
 
+function hit_shark(player, shark) {
+	shark.kill();
+	game_over();
+}
 function game_over() {
     game.add.sprite(0, 0, 'black_bg'); 
     var game_over_text = game.add.text(
