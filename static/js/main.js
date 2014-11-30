@@ -295,12 +295,29 @@ function add_jellyfish(x_coord, y_coord) {
 }
 
 
-function add_shark() {
-    var shark = sharks.create(
-            0,
-            Math.floor(Math.random() * game.world.height),
+function add_shark(y_coord, side) {
+	if(side === -1)
+	{
+		var shark = sharks.create(
+            GAME_WIDTH,
+            y_coord,
             'shark');
-    shark.body.x = shark.body.x + 1;
+		shark.anchor.setTo(.5, 1); //so it flips around its middle
+		shark.scale.x = -1; //flipped
+	}
+    else if(side === 1)
+	{
+		var shark = sharks.create(
+            0,
+            y_coord,
+            'shark');
+		shark.anchor.setTo(.5, 1); //so it flips around its middle
+		shark.scale.x = 1; //facing default direction
+	}
+	
+ 
+	
+	shark.side = side;		
     shark.checkWorldBounds = true; 
     shark.outOfBoundsKill = true;
     shark.animations.add('swim', [0, 1, 2], 12, true);
@@ -395,10 +412,18 @@ function update_physics() {
     }, this);
 
     sharks.forEach(function(item) {
-        item.body.velocity.x = speed;
-        item.body.acceleration.x = acceleration;
-        item.body.velocity.y = speed;
-        item.body.acceleration.y = acceleration;
+        item.body.velocity.x = 700 * item.side;
+        item.body.acceleration.x = 1000 * item.side;
+		if(speed < 0 || acceleration < 0)
+		{
+			item.body.acceleration.y = -500;
+			item.body.velocity.y = -500;
+		}
+		else
+		{
+			item.body.velocity.y = 0;
+			item.body.acceleration.y = 0;
+		}
     }, this);
 
     patties.forEach(function(item) {
@@ -517,8 +542,15 @@ function update() {
         add_krabby_patty();
     }
 
-    if (game.time.time % 96 === 0 && altitude > 0) {
-        add_shark();
+    if (game.time.time % 96 === 0 && altitude > 500) {
+		if(altitude % 8 === 0)
+		{
+			add_shark( 300, -1 );
+		}
+        else
+		{
+			add_shark(300,1);
+		}
 		add_clam();
     }
 
