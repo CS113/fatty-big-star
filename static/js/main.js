@@ -73,7 +73,7 @@ var _____,
 
     //Timer,
     squid_timer,
-	patty_timer = undefined,
+    patty_timer,
 
     // Music
     bg_music,
@@ -297,43 +297,31 @@ function add_jellyfish(x_coord, y_coord) {
 }
 
 
-function add_shark(y_coord, side) {
-	if(side === -1)
-	{
-		var shark = sharks.create(
-            GAME_WIDTH,
-            y_coord,
-            'shark');
-		shark.anchor.setTo(.5, 1); //so it flips around its middle
-		shark.scale.x = -1; //flipped
-	}
-    else if(side === 1)
-	{
-		var shark = sharks.create(
-            0,
-            y_coord,
-            'shark');
-		shark.anchor.setTo(.5, 1); //so it flips around its middle
-		shark.scale.x = 1; //facing default direction
-	}
-	
- 
-	
-	shark.side = side;		
+function add_shark() {
+    var y_coord = 300;
+    var coin = (Math.random() <= 0.5) ? -1 : 1;
+    var x_coord = (coin === -1) ? GAME_WIDTH : 0;
+	var shark = sharks.create(x_coord, y_coord, 'shark');
+
+    shark.anchor.setTo(0.5, 1);
+    shark.scale.x = coin;
+	shark.side = coin;		
     shark.checkWorldBounds = true; 
     shark.outOfBoundsKill = true;
     shark.animations.add('swim', [0, 1, 2], 12, true);
     shark.animations.play('swim');
 
-    // Start each shark at a random animation to look more real
-    shark.animations.currentAnim.frame = Math.floor(Math.random() * 2);
+    shark.animations.currentAnim.frame = 
+                        Math.floor(Math.random() * 2);
 }
+
 
 function add_clam() {
 	var clam = clams.create(player.x - 22.8, 0, 'clam');
 	clam.checkWorldBounds = true;
 	clam.outOfBoundsKill = true;
 }
+
 
 function add_ink() {
     var ink = inks.create(player.x - 300, -200, 'ink');
@@ -416,16 +404,13 @@ function update_physics() {
     sharks.forEach(function(item) {
         item.body.velocity.x = 700 * item.side;
         item.body.acceleration.x = 1000 * item.side;
-		if(speed < 0 || acceleration < 0)
-		{
-			item.body.acceleration.y = -500;
-			item.body.velocity.y = -500;
-		}
-		else
-		{
-			item.body.velocity.y = 0;
-			item.body.acceleration.y = 0;
-		}
+        if (speed < 0 || acceleration < 0) {
+            item.body.acceleration.y = -500;
+            item.body.velocity.y = -500;
+        } else {
+            item.body.velocity.y = 0;
+            item.body.acceleration.y = 0;
+        }
     }, this);
 
     patties.forEach(function(item) {
@@ -530,36 +515,31 @@ function update() {
 			hit_clam,
 			null,
 			this);
-	game.physics.arcade.overlap(player,
-		sharks,
-		hit_shark,
-		null,
-		this);
+    game.physics.arcade.overlap(player,
+        sharks,
+        hit_shark,
+        null,
+        this);
     // ===============================
     // ==== Add & delete entities ====
     // ===============================
 
-    if (game.time.time %
-            (50 + Math.floor(Math.random() * 100)) === 0 && altitude > 0) {
-                add_grouped('jellyfish');
-            }
+    if (game.time.time % (50 + Math.floor(
+            Math.random() * 100)) === 0 && altitude > 0) {
+        add_grouped('jellyfish');
+    }
 
     if (altitude > 0 && patty_timer === undefined) {
         patty_timer = game.time.events.loop(
-                Phaser.Timer.SECOND * 0.33 , add_krabby_patty, this);
-		timer_set = true;
+                        Phaser.Timer.SECOND * 0.33,
+                        add_krabby_patty,
+                        this);
+        timer_set = true;
     }
 
     if (game.time.time % 96 === 0 && altitude > 500) {
-		if(altitude % 8 === 0)
-		{
-			add_shark( 300, -1 );
-		}
-        else
-		{
-			add_shark(300,1);
-		}
-		add_clam();
+        add_shark();
+        add_clam();
     }
 
     if (altitude % 5400 === 0  && altitude > 999) {
@@ -648,15 +628,19 @@ function hit_jellyfish(player, jellyfish) {
     energy = 0;
 }
 
+
 function hit_clam(player, clam) {
 	clam.kill();
 	energy = energy - 50;
 }	
 
+
 function hit_shark(player, shark) {
 	shark.kill();
 	game_over();
 }
+
+
 function game_over() {
     game.add.sprite(0, 0, 'black_bg'); 
     var game_over_text = game.add.text(
