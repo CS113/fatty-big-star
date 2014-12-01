@@ -31,20 +31,20 @@ var ENTITY_VALUE_MAP = {
     'patty': {
         // starting coeffs, dynamically modified as game progresses
         // powerups start at a high frequency and decrease
-        SPAWN_RATE: 5,  
+        SPAWN_RATE: 15,  
         // for powerups, there's a min frequency (it's dropping)
         RATE_CAP: 65,
         DIPLOMACY: DIPLOMACY.POWERUP
     },
     'jellyfish': {
         // obstacles start at a low frequency and increase
-        SPAWN_RATE: 300,
+        SPAWN_RATE: 150,
         // for obstacles, there's a max frequency (it's rising)
         RATE_CAP: 25,
         DIPLOMACY: DIPLOMACY.OBSTACLE
     },
     'shark': {
-        SPAWN_RATE: 300,
+        SPAWN_RATE: 200,
         RATE_CAP: 75,
         DIPLOMACY: DIPLOMACY.OBSTACLE
 
