@@ -70,6 +70,9 @@ function preload() {
     game.load.image('bubble', 'static/imgs/bubble.png');
     game.load.image('energy_bar', 'static/imgs/energy_bar.png');
     game.load.image('empty_energy_bar', 'static/imgs/empty_energy_bar.png');
+	game.load.image('clam', 'static/imgs/clam.png');
+    game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
+    game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
 
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
@@ -107,6 +110,7 @@ var _____,
     energy_bar,
     inks,
     squids,
+	clams,
 
     // Text
     altitude_text,
@@ -153,9 +157,7 @@ function create() {
 
     // Add background sound
     bg_music = game.add.audio('background_music');
-    if (!DEBUG) {
-        bg_music.play();
-    }
+    bg_music.play();
 
     // Add ocean background
     game.add.sprite(0, 0, 'ocean');
@@ -218,6 +220,9 @@ function create() {
 
     inks = game.add.group();
     inks.enableBody = true;
+	
+	clams = game.add.group();
+	clams.enableBody = true;
 
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
@@ -226,7 +231,9 @@ function create() {
             'patty');
     first_patty.scale.setTo(0.4, 0.4);
     first_patty.body.gravity.y = 600;
-
+	
+    add_sound_control_button();
+	
     empty_energy_bar = game.add.sprite(game.width - (216 + 10), 10,
             'empty_energy_bar');
     empty_energy_bar.scale.setTo(1, 0.5);
@@ -256,8 +263,36 @@ function create() {
 
     // Controls
     cursors = game.input.keyboard.createCursorKeys();
+	
 }
 
+function add_sound_control_button() {
+    sound_off_button = game.add.sprite(game.width - 50, 40, 'sound_off_button');
+    sound_off_button.width = 25;
+    sound_off_button.height = 25;
+	
+    sound_on_button = game.add.sprite(game.width - 50, 40, 'sound_on_button');
+    sound_on_button.width = 0;
+    sound_on_button.height = 25;
+
+    sound_off_button.inputEnabled = true;
+    sound_on_button.inputEnabled = true;
+
+    sound_off_button.events.onInputDown.add(sound_off, this);
+    sound_on_button.events.onInputDown.add(sound_on, this);
+}
+
+function sound_off() {
+    bg_music.volume = 0;
+    sound_off_button.width = 0;
+    sound_on_button.width = 25;
+}
+
+function sound_on() {
+    bg_music.volume = 1;
+    sound_off_button.width = 25;
+    sound_on_button.width = 0;
+}
 
 /*
  * This function uses the current altitude and entity name
@@ -379,18 +414,28 @@ function add_jellyfish(x_coord, y_coord) {
 
 
 function add_shark() {
-    var shark = sharks.create(
-            0,
-            Math.floor(Math.random() * game.world.height),
-            'shark');
-    shark.body.x = shark.body.x + 1;
+    var y_coord = 300;
+    var coin = (Math.random() <= 0.5) ? -1 : 1;
+    var x_coord = (coin === -1) ? GAME_WIDTH : 0;
+	var shark = sharks.create(x_coord, y_coord, 'shark');
+
+    shark.anchor.setTo(0.5, 1);
+    shark.scale.x = coin;
+	shark.side = coin;		
     shark.checkWorldBounds = true; 
     shark.outOfBoundsKill = true;
     shark.animations.add('swim', [0, 1, 2], 12, true);
     shark.animations.play('swim');
 
-    // Start each shark at a random animation to look more real
-    shark.animations.currentAnim.frame = Math.floor(Math.random() * 2);
+    shark.animations.currentAnim.frame = 
+                        Math.floor(Math.random() * 2);
+}
+
+
+function add_clam() {
+	var clam = clams.create(player.x - 22.8, 0, 'clam');
+	clam.checkWorldBounds = true;
+	clam.outOfBoundsKill = true;
 }
 
 
@@ -473,10 +518,15 @@ function update_physics() {
     }, this);
 
     sharks.forEach(function(item) {
-        item.body.velocity.x = speed;
-        item.body.acceleration.x = acceleration;
-        item.body.velocity.y = speed;
-        item.body.acceleration.y = acceleration;
+        item.body.velocity.x = 700 * item.side;
+        item.body.acceleration.x = 1000 * item.side;
+        if (speed < 0 || acceleration < 0) {
+            item.body.acceleration.y = -500;
+            item.body.velocity.y = -500;
+        } else {
+            item.body.velocity.y = 0;
+            item.body.acceleration.y = 0;
+        }
     }, this);
 
     patties.forEach(function(item) {
@@ -492,6 +542,13 @@ function update_physics() {
         item.body.acceleration.y = acceleration;
     }, this);
 
+	clams.forEach(function(item) {
+		item.scale.setTo(0.4, 0.4);
+		item.body.velocity.y = 1000;
+		item.body.acceleration.y = 500;
+		item.body.gravity.y = 300;
+	}, this);	
+	
     squids.forEach(function(item) {
         // Fix squid physics effect. Squids are unique because they 
         // are naturally floating upwards, not downwards.
@@ -556,6 +613,7 @@ function update() {
     // ==============================
     // ==== Check for collisions ====
     // ==============================
+	game.physics.arcade.collide(clams, platforms);
     game.physics.arcade.collide(jellyfishes, platforms);
     game.physics.arcade.collide(patties, platforms);
     game.physics.arcade.collide(player,
@@ -568,7 +626,16 @@ function update() {
             hit_jellyfish,
             null,
             this);
-
+	game.physics.arcade.overlap(player,
+			clams,
+			hit_clam,
+			null,
+			this);
+    game.physics.arcade.overlap(player,
+        sharks,
+        hit_shark,
+        null,
+        this);
     // ===============================
     // ==== Add & delete entities ====
     // ===============================
@@ -593,6 +660,7 @@ function update() {
     var shark_rate = fuzz_number(ENTITY_VALUE_MAP['shark'].SPAWN_RATE);
     if (game.time.time % shark_rate === 0 && altitude > 0) {
         add_shark();
+        add_clam();
     }
 
     var squid_rate = fuzz_number(ENTITY_VALUE_MAP['squid'].SPAWN_RATE);
@@ -690,6 +758,18 @@ function collect_patty(player, patty) {
 function hit_jellyfish(player, jellyfish) {
     jellyfish.kill();
     energy = 0;
+}
+
+
+function hit_clam(player, clam) {
+	clam.kill();
+	energy = energy - 50;
+}	
+
+
+function hit_shark(player, shark) {
+	shark.kill();
+	game_over();
 }
 
 
