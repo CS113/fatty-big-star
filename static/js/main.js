@@ -31,6 +31,8 @@ function preload() {
     game.load.image('energy_bar', 'static/imgs/energy_bar.png');
     game.load.image('empty_energy_bar', 'static/imgs/empty_energy_bar.png');
 	game.load.image('clam', 'static/imgs/clam.png');
+    game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
+    game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
 
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
@@ -112,9 +114,7 @@ function create() {
 
     // Add background sound
     bg_music = game.add.audio('background_music');
-    if (!DEBUG) {
-        bg_music.play();
-    }
+    bg_music.play();
 
     // Add ocean background
     game.add.sprite(0, 0, 'ocean');
@@ -188,7 +188,9 @@ function create() {
             'patty');
     first_patty.scale.setTo(0.4, 0.4);
     first_patty.body.gravity.y = 600;
-
+	
+    add_sound_control_button();
+	
     empty_energy_bar = game.add.sprite(game.width - (216 + 10), 10,
             'empty_energy_bar');
     empty_energy_bar.scale.setTo(1, 0.5);
@@ -221,6 +223,33 @@ function create() {
 	
 }
 
+function add_sound_control_button() {
+    sound_off_button = game.add.sprite(game.width - 50, 40, 'sound_off_button');
+    sound_off_button.width = 25;
+    sound_off_button.height = 25;
+	
+    sound_on_button = game.add.sprite(game.width - 50, 40, 'sound_on_button');
+    sound_on_button.width = 0;
+    sound_on_button.height = 25;
+
+    sound_off_button.inputEnabled = true;
+    sound_on_button.inputEnabled = true;
+
+    sound_off_button.events.onInputDown.add(sound_off, this);
+    sound_on_button.events.onInputDown.add(sound_on, this);
+}
+
+function sound_off() {
+    bg_music.volume = 0;
+    sound_off_button.width = 0;
+    sound_on_button.width = 25;
+}
+
+function sound_on() {
+    bg_music.volume = 1;
+    sound_off_button.width = 25;
+    sound_on_button.width = 0;
+}
 
 function add_krabby_patty() {
     var patty = patties.create(
