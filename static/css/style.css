@@ -4,6 +4,7 @@ body {
     background-size: 100%;
     background-repeat: no-repeat;
     background-color: #000;
+    text-align: center;
 }
 
 .pre_text {
@@ -12,4 +13,9 @@ body {
 
 canvas {
     margin: auto;
+}
+
+#intro_video {
+    width: 770px;
+    height: 882px;
 }
