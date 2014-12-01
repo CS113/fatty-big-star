@@ -6,6 +6,7 @@ var DEBUG = true,  // toggle this variable
     PATRICK_VELOCITY_X = 300,
     PATTY_SPEED_BOOST = 350,
     ENERGY_CAP = 500,
+    ALTITUDE_CHUNK = 4000,
     GAME_TEXT = 'Lucida Grande',
     BLACK_HEX = '#000',
     GREEN_HEX = '#83F52C';
@@ -19,6 +20,45 @@ var game = new Phaser.Game(
             create: create,
     update: update }
     );
+
+var DIPLOMACY = {
+    OBSTACLE: 0,
+    POWERUP: 1,
+    NEUTRAL: 2
+}
+
+var ENTITY_VALUE_MAP = {
+    'patty': {
+        // starting coeffs, dynamically modified as game progresses
+        // powerups start at a high frequency and decrease
+        SPAWN_RATE: 5,  
+        // for powerups, there's a min frequency (it's dropping)
+        RATE_CAP: 65,
+        DIPLOMACY: DIPLOMACY.POWERUP
+    },
+    'jellyfish': {
+        // obstacles start at a low frequency and increase
+        SPAWN_RATE: 300,
+        // for obstacles, there's a max frequency (it's rising)
+        RATE_CAP: 25,
+        DIPLOMACY: DIPLOMACY.OBSTACLE
+    },
+    'shark': {
+        SPAWN_RATE: 300,
+        RATE_CAP: 75,
+        DIPLOMACY: DIPLOMACY.OBSTACLE
+
+    },
+    'squid': {
+        SPAWN_RATE: 5400,
+        RATE_CAP: 1000,
+        DIPLOMACY: DIPLOMACY.OBSTACLE
+    },
+    'bubble': {
+        SPAWN_RATE: 30,
+        DIPLOMACY: DIPLOMACY.NEUTRAL
+    }
+}
 
 
 // Load static assets
@@ -50,6 +90,10 @@ var _____,
     altitude = 0,
     energy = 0,
     patty_boost_timer = 0,
+    // Every 4000 altitude, the game gets 'harder', powerups and patties
+    // are spawned rarer while obstacles are spawned more frequently
+    // This # was chosen b/c 4000 altitude gets traversed every few seconds
+    altitude_checkmark = ALTITUDE_CHUNK,
 
     // Entity groups
     player,
@@ -212,6 +256,50 @@ function create() {
 
     // Controls
     cursors = game.input.keyboard.createCursorKeys();
+}
+
+
+/*
+ * This function uses the current altitude and entity name
+ * to generate a frequency of spawn for said entity. This coeff
+ * is then used to modulus against the game timer, a larger
+ * coeff maens rarer spawn times.
+ */
+function set_spawn_rate(entity_name) {
+    if (altitude <= altitude_checkmark) {
+        return;
+    }
+    altitude_checkmark += ALTITUDE_CHUNK;
+    var rate_delta = 1;
+
+    var entity = ENTITY_VALUE_MAP[entity_name];
+
+    if (entity.DIPLOMACY === DIPLOMACY.OBSTACLE) {
+        // obstacles get more frequent
+        entity.SPAWN_RATE = Math.max(
+            entity.SPAWN_RATE - rate_delta, entity.RATE_CAP);
+    } else if (entity.DIPLOMACY === DIPLOMACY.POWERUP) {
+        // powerups start at a high rate and lose frequency
+        entity.SPAWN_RATE = Math.min(
+            entity.SPAWN_RATE + rate_delta, entity.RATE_CAP);
+    } else if (entity.DIPLOMACY === DIPLOMACY.NEUTRAL) {
+        // do nothing
+    }
+}
+
+
+/*
+ * Inputs a number and returns the same number but
+ * with a little subtracted or added to it. "A little"
+ * here means a small percentage of the number itself
+ */
+function fuzz_number(number) {
+    var percentage_num = Math.ceil(number * 0.30);
+    var rand_coeff = Math.random() * percentage_num;
+    if (Math.random() > 0.5) {
+        rand_coeff *= -1;
+    }
+    return Math.ceil(number + rand_coeff);
 }
 
 
@@ -485,25 +573,44 @@ function update() {
     // ==== Add & delete entities ====
     // ===============================
 
-    if (game.time.time %
-            (50 + Math.floor(Math.random() * 100)) === 0 && altitude > 0) {
-                add_grouped('jellyfish');
-            }
+    if (game.time.time % 4 === 0) {
+        var entities = Object.keys(ENTITY_VALUE_MAP);
+        for (var i = 0; i < entities.length; i++) {
+            set_spawn_rate(entities[i]);
+        }
+    }
 
-    if (game.time.time % 15 === 0 && altitude > 0) {
+    var jelly_rate = fuzz_number(ENTITY_VALUE_MAP['jellyfish'].SPAWN_RATE);
+    if (game.time.time % jelly_rate === 0 && altitude > 0) {
+        add_grouped('jellyfish');
+    }
+
+    var patty_rate = fuzz_number(ENTITY_VALUE_MAP['patty'].SPAWN_RATE);
+    if (game.time.time % patty_rate === 0 && altitude > 0) {
         add_krabby_patty();
     }
 
-    if (game.time.time % 100 === 0 && altitude > 0) {
+    var shark_rate = fuzz_number(ENTITY_VALUE_MAP['shark'].SPAWN_RATE);
+    if (game.time.time % shark_rate === 0 && altitude > 0) {
         add_shark();
     }
 
-    if (altitude % 5400 === 0  && altitude > 999) {
+    var squid_rate = fuzz_number(ENTITY_VALUE_MAP['squid'].SPAWN_RATE);
+    if (altitude % squid_rate === 0  && altitude > 999) {
         add_squid(50 + Math.floor(Math.random() * 650), 600);
     }
 
-    if (game.time.time % (10 + Math.floor(Math.random() * 65)) === 0 && altitude > 0) {
+    var bubble_rate = fuzz_number(ENTITY_VALUE_MAP['bubble'].SPAWN_RATE);
+    // bubbles are background objects, no dynamic changing spawn rate
+    // (10 + Math.floor(Math.random() * 65))
+    if (game.time.time % bubble_rate === 0
+            && altitude > 0) {
         add_grouped('bubble');
+    }
+
+    if (DEBUG && game.time.time % 16 === 0) {
+        console.log('patty rate ' + ENTITY_VALUE_MAP['patty'].SPAWN_RATE
+            + ' ' + patty_rate);
     }
 
     // ==================
@@ -557,7 +664,8 @@ function update() {
         if (DEBUG) {
             console.log(
                     '<DEBUG>: Speed: ' + speed.toString() +
-                    ', Energy: ' + energy.toString());
+                    ', Energy: ' + energy.toString() + 
+                    ', Altitude: ' + altitude.toString());
             console.log(energy_percent);
         }
     }
