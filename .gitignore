@@ -1,3 +1,8 @@
+*.pyc
+
+# Highscores list should not be uploaded/allowed for change
+highscores.csv
+
 # Pycharm
 .idea
 
