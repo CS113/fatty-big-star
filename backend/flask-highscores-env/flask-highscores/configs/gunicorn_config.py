@@ -10,5 +10,5 @@ pythonpath = '/home/lucas/www/fatty-big-star/backend/'\
 bind = '127.0.0.1:8046'
 workers = 1
 user = 'lucas'
-accesslog = '/home/lucas/logs/fatty.lucasou.com/gunicorn-access.log'
-errorlog = '/home/lucas/logs/fatty.lucasou.com/gunicorn-error.log'
+#accesslog = '/home/lucas/logs/fatty.lucasou.com/gunicorn-access.log'
+#errorlog = '/home/lucas/logs/fatty.lucasou.com/gunicorn-error.log'

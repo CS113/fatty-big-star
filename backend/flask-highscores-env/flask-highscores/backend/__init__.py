@@ -72,7 +72,7 @@ def highscores_get():
     with open(app.config['HIGHSCORES_URI'], 'rb') as csvfile:
         rd = csv.reader(csvfile)
         scores = sorted([row for row in rd],
-                        key=lambda x: x[1],
+                        key=lambda x: int(x[1]),
                         reverse=True)
     return jsonify({'scores': scores})
 

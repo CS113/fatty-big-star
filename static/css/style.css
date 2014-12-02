@@ -11,11 +11,26 @@ body {
     text-align: center;
 }
 
+
 canvas {
     margin: auto;
 }
 
+
 #intro_video {
     width: 770px;
     height: 882px;
+}
+
+
+#username_input {
+    position: absolute;
+    top: 200px;
+    left: 700px;
+}
+
+
+#username_field {
+    width: 300px;
+    height: 40px;
 }

@@ -25,7 +25,7 @@ var DIPLOMACY = {
     OBSTACLE: 0,
     POWERUP: 1,
     NEUTRAL: 2
-}
+};
 
 var ENTITY_VALUE_MAP = {
     'patty': {
@@ -58,7 +58,7 @@ var ENTITY_VALUE_MAP = {
         SPAWN_RATE: 30,
         DIPLOMACY: DIPLOMACY.NEUTRAL
     }
-}
+};
 
 
 // Load static assets
@@ -97,6 +97,7 @@ var _____,
     // are spawned rarer while obstacles are spawned more frequently
     // This # was chosen b/c 4000 altitude gets traversed every few seconds
     altitude_checkmark = ALTITUDE_CHUNK,
+    final_altitude = 0,
 
     // Entity groups
     player,
@@ -116,7 +117,6 @@ var _____,
     altitude_text,
     energy_text,
 
-
     //Timer,
     squid_timer,
 
@@ -124,6 +124,7 @@ var _____,
     bg_music,
 
     facing_right = true,
+    game_ended = false,
 
     // Time and interval variables
     starting_time,
@@ -157,7 +158,9 @@ function create() {
 
     // Add background sound
     bg_music = game.add.audio('background_music');
-    bg_music.play();
+    if (!DEBUG) {
+        bg_music.play();
+    }
 
     // Add ocean background
     game.add.sprite(0, 0, 'ocean');
@@ -566,10 +569,8 @@ function update_physics() {
     // Safe assumption because all entities are killed after
     // they fall off the map, Patrick has no way of getting up
     if (speed < -1500 || altitude < 0) {
-        console.log("GAME OVER!"); 
-        game_over();
-        // lmfao .. we lazy
-        window.location.reload();
+        if (!game_ended)
+            game_over();
     }
 
     // Exhaust effect of patties so they don't last forever
@@ -671,14 +672,13 @@ function update() {
     var bubble_rate = fuzz_number(ENTITY_VALUE_MAP['bubble'].SPAWN_RATE);
     // bubbles are background objects, no dynamic changing spawn rate
     // (10 + Math.floor(Math.random() * 65))
-    if (game.time.time % bubble_rate === 0
-            && altitude > 0) {
+    if (game.time.time % bubble_rate === 0 && altitude > 0) {
         add_grouped('bubble');
     }
 
     if (DEBUG && game.time.time % 16 === 0) {
-        console.log('patty rate ' + ENTITY_VALUE_MAP['patty'].SPAWN_RATE
-            + ' ' + patty_rate);
+        console.log('patty rate ' + ENTITY_VALUE_MAP['patty'].SPAWN_RATE +
+            ' ' + patty_rate);
     }
 
     // ==================
@@ -769,17 +769,61 @@ function hit_clam(player, clam) {
 
 function hit_shark(player, shark) {
 	shark.kill();
-	game_over();
+    if (!game_ended)
+        game_over();
+}
+
+
+function add_end_text(text) {
+    var game_over_text = game.add.text(
+            game.width / 2 - 100, 
+            game.height/2,
+            text, 
+            {font: '40px ' + GAME_TEXT, fill: '#FFF'});
+}
+
+
+function send_highscores() {
+    var username = $('#username_field').val();
+    var post_to = '/api/highscore_send';
+    
+    if (!username || 0 === username.length) {
+        // TODO: Remind user on screen to enter a username
+        return;
+    }
+
+    $.post(post_to, { name: username, score: final_altitude },
+        function(response) {
+            var send_status = response.status;
+            if (!send_status) {
+                add_end_text('HIGHSCORE SEND ERROR');
+            } else {
+                window.location.reload();
+            }
+        }, 'json'
+    );
 }
 
 
 function game_over() {
+    game_ended = true;
+    console.log("Game Over"); 
+
+    speed = 0;
+    acceleration = 0;
+
     game.add.sprite(0, 0, 'black_bg'); 
-    var game_over_text = game.add.text(
-            game.width / 2 - 100, 
-            game.height/2,
-            'GAME OVER', 
-            { font: '40px ' + GAME_TEXT,
-                fill: '#FFF' }
-            );
+
+    final_altitude = altitude.toString();
+    add_end_text('Game Over!\nFinal score: ' + final_altitude);
+
+    game.add.text(game.width / 2 - 100, 
+                    (game.height/2) + 100,
+                    'Enter your username above!',
+                    {font: '40px' + GAME_TEXT, fill: '#FFF'});
+
+    var wrapper = $('#username_input');
+    wrapper.append('<input id="username_field" type="text"/>');
+    wrapper.append('<button id="send_highscores" ' +
+                   'onclick="send_highscores()">Submit!</button>');
 }

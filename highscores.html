@@ -1,0 +1,35 @@
+<!doctype html> 
+<html lang="en"> 
+  <head> 
+    <meta charset="UTF-8" />
+    <title>Highscores</title>
+    <link rel="stylesheet" type="text/css" href="static/css/style.css">
+  </head>
+  <body>
+    <br>
+    <br>
+    <b><a href="/game.html">RETURN TO GAME</a></b>
+    <br>
+    <br>
+    <div id="highscore_list"></div>
+
+    <!-- jQUery for client -> ajax -> server communication for highscores -->
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+    <!-- TODO: Minify our main.js -->
+    <script type="text/javascript">
+        var get_from = '/api/highscore_get';
+        $.get(get_from, function(response) {
+            var scores_list = response.scores;
+            var wrapper = $('#highscore_list');
+            for (var i = 0; i < scores_list.length; i++) {
+                wrapper.append('Name: <b>' + scores_list[i][0] + '</b>  --  ');
+                wrapper.append('Score: <b>' + scores_list[i][1] + '</b>');
+                wrapper.append('<br>');
+                wrapper.append('<br>');
+            }
+            // alert(scores_list);
+        });
+    </script>
+  </body>
+</html>
