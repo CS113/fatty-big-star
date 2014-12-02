@@ -30,3 +30,9 @@ node_modules
 # Users Environment Variables
 .lock-wscript
 static/js/main_clams.js
+
+# Virtualenv
+bin/
+include/
+lib/
+local/
