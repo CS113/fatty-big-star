@@ -15,3 +15,11 @@ CSRF_ENABLED = True
 CSRF_SESSION_KEY = "dfdgjnsdkwendsspongbobsquidwarddfd"
 
 ROOT_URL = "http://fatty.lucasou.com"
+
+HIGHSCORES_URI = '/home/lucas/www/fatty-big-star/'\
+                 'backend/flask-highscores-env/'\
+                 'flask-highscores/highscores.csv'
+
+MAX_USERNAME = 25
+MAX_SCORE = 1000000
+MAX_HIGHSCORE_ENTRIES = 10000;
