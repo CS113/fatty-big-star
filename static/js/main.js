@@ -74,8 +74,10 @@ function preload() {
     game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
     game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
 
+    game.load.spritesheet('patrick_swimming', 'static/imgs/patrick_swimming_sprites.png', 54, 50);
+    game.load.spritesheet('patrick_falling', 'static/imgs/patrick_falling_sprites.png', 45, 53);
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
-    game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
+
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
     game.load.spritesheet('shark', 'static/imgs/sharks.png', 103,45);
     game.load.spritesheet('squid', 'static/imgs/squidsheet.png', 49, 121);
@@ -187,13 +189,13 @@ function create() {
     player = game.add.sprite(
             game.world.width / 2,
             game.world.height - 150,
-            'patrick');
+            'patrick_swimming');
     game.physics.arcade.enable(player);
     // player.body.bounce.y = 0.2;
     // player.body.gravity.y = 300;
     player.body.immovable = true;
     player.body.collideWorldBounds = true;
-    player.animations.add('flying', [0, 1, 2], 15, true);
+    player.animations.add('flying', [0, 1, 2, 3], 23, true);
     player.animations.play('flying');
     player.anchor.setTo(0.5, 0.5);
 
@@ -715,7 +717,7 @@ function update() {
     } else if (!flying) {
         // stand still, no horiz movement
         player.animations.stop();
-        player.frame = 2;
+        player.frame = 0;
     }
 
     // ===========================
