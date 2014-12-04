@@ -57,7 +57,11 @@ var ENTITY_VALUE_MAP = {
     'bubble': {
         SPAWN_RATE: 30,
         DIPLOMACY: DIPLOMACY.NEUTRAL
-    }
+    },
+	'shield': {
+		SPAWN_RATE: 900,
+		DIPLOMACY: DIPLOMACY.POWERUP
+	}
 };
 
 
@@ -456,7 +460,7 @@ function add_clam() {
 }
 
 function add_bubble_shield() {
-	var shield = bubble_shields.create(player.x - 40, 0, 'golden_bubble');
+	var shield = bubble_shields.create(Math.random() * 650, 0, 'golden_bubble');
 	shield.checkWorldBounds = true;
 	shield.outOfBoundsKill = true;
 	shield.scale.setTo(0.43, 0.43);
@@ -717,8 +721,12 @@ function update() {
     if (game.time.time % shark_rate === 0 && altitude > 0) {
         add_shark();
         add_clam();
-		add_bubble_shield();
     }
+	
+	var shield_rate = fuzz_number(ENTITY_VALUE_MAP['shield'].SPAWN_RATE);
+	if(game.time.time % shield_rate === 0 && altitude > 0) {
+		add_bubble_shield();
+	}	
 
     var squid_rate = fuzz_number(ENTITY_VALUE_MAP['squid'].SPAWN_RATE);
     if (altitude % squid_rate === 0  && altitude > 999) {
