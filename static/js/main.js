@@ -57,7 +57,11 @@ var ENTITY_VALUE_MAP = {
     'bubble': {
         SPAWN_RATE: 30,
         DIPLOMACY: DIPLOMACY.NEUTRAL
-    }
+    },
+	'shield': {
+		SPAWN_RATE: 900,
+		DIPLOMACY: DIPLOMACY.POWERUP
+	}
 };
 
 
@@ -73,6 +77,7 @@ function preload() {
 	game.load.image('clam', 'static/imgs/clam.png');
     game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
     game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
+	game.load.image('golden_bubble', 'static/imgs/golden_bubble.png');
 
     game.load.spritesheet('patrick_swimming', 'static/imgs/patrick_swimming_sprites.png', 54, 50);
     game.load.spritesheet('patrick_falling', 'static/imgs/patrick_falling_sprites.png', 45, 53);
@@ -114,6 +119,8 @@ var _____,
     inks,
     squids,
 	clams,
+	bubble_shields,
+	shield,
 
     // Text
     altitude_text,
@@ -125,8 +132,10 @@ var _____,
     // Music
     bg_music,
 
+	//Flags
     facing_right = true,
     game_ended = false,
+	in_shield = false,
 
     // Time and interval variables
     starting_time,
@@ -208,6 +217,12 @@ function create() {
     aura.anchor.setTo(0.5, 0.5);
     aura.exists = false;
 
+	
+	shield = game.add.sprite(0,0, 'golden_bubble');
+	shield.exists = false;
+	shield.scale.setTo(0.43, 0.43);
+	shield.anchor.setTo(0.43, 0.43);
+	
     jellyfishes = game.add.group();
     jellyfishes.enableBody = true;
 
@@ -228,6 +243,9 @@ function create() {
 	
 	clams = game.add.group();
 	clams.enableBody = true;
+	
+	bubble_shields = game.add.group();
+	bubble_shields.enableBody = true;
 
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
@@ -443,6 +461,12 @@ function add_clam() {
 	clam.outOfBoundsKill = true;
 }
 
+function add_bubble_shield() {
+	var shield = bubble_shields.create(Math.random() * 650, 0, 'golden_bubble');
+	shield.checkWorldBounds = true;
+	shield.outOfBoundsKill = true;
+	shield.scale.setTo(0.43, 0.43);
+}
 
 function add_ink() {
     var ink = inks.create(player.x - 300, -200, 'ink');
@@ -505,7 +529,17 @@ function update_physics() {
     // Update aura positions to patrick, this should be done elsewhere!
     aura.x = player.x;
     aura.y = player.y;
-
+	shield.x = player.x;
+	shield.y = player.y;
+	if(in_shield)
+	{
+		shield.exists = true;
+	}
+	else
+	{
+		shield.exists = false;
+	}
+	
     platforms.forEach(function(item) {
         item.body.velocity.y = speed;
         item.body.acceleration.y = acceleration;
@@ -549,10 +583,28 @@ function update_physics() {
 
 	clams.forEach(function(item) {
 		item.scale.setTo(0.4, 0.4);
-		item.body.velocity.y = 1000;
-		item.body.acceleration.y = 500;
+		item.body.velocity.y = speed * 2;
+		item.body.acceleration.y = acceleration;
 		item.body.gravity.y = 300;
+		if(speed < 0 || acceleration < 0)
+		{
+			item.body.velocity.y = 400;
+			item.body.acceleration.y = 200;
+			item.body.gravity.y = 150;
+		}
 	}, this);	
+	
+	bubble_shields.forEach(function(item) {
+		item.body.velocity.y = speed * 1.5;
+		item.body.acceleration.y = acceleration;
+		item.body.gravity.y = 150;
+		if(speed < 0 || acceleration < 0)
+		{
+			item.body.velocity.y = 400;
+			item.body.acceleration.y = 200;
+			item.body.gravity.y = 150;
+		}
+	}, this);
 	
     squids.forEach(function(item) {
         // Fix squid physics effect. Squids are unique because they 
@@ -620,25 +672,32 @@ function update() {
     game.physics.arcade.collide(jellyfishes, platforms);
     game.physics.arcade.collide(patties, platforms);
     game.physics.arcade.collide(player,
-            patties,
-            collect_patty,
-            null,
-            this);
+		patties,
+		collect_patty,
+		null,
+		this);
     game.physics.arcade.overlap(player,
-            jellyfishes,
-            hit_jellyfish,
-            null,
-            this);
+		jellyfishes,
+		hit_jellyfish,
+		null,
+		this);
 	game.physics.arcade.overlap(player,
-			clams,
-			hit_clam,
-			null,
-			this);
+		clams,
+		hit_clam,
+		null,
+		this);
     game.physics.arcade.overlap(player,
         sharks,
         hit_shark,
         null,
         this);
+	game.physics.arcade.overlap(player,
+		bubble_shields,
+		hit_shield,
+		null,
+		this);
+		
+		
     // ===============================
     // ==== Add & delete entities ====
     // ===============================
@@ -665,6 +724,11 @@ function update() {
         add_shark();
         add_clam();
     }
+	
+	var shield_rate = fuzz_number(ENTITY_VALUE_MAP['shield'].SPAWN_RATE);
+	if(game.time.time % shield_rate === 0 && altitude > 0) {
+		add_bubble_shield();
+	}	
 
     var squid_rate = fuzz_number(ENTITY_VALUE_MAP['squid'].SPAWN_RATE);
     if (altitude % squid_rate === 0  && altitude > 999) {
@@ -743,7 +807,6 @@ function update() {
     energy_bar.width = (energy / ENERGY_CAP) * 212;
 }
 
-
 function collect_patty(player, patty) {
     patty.kill();
 
@@ -759,20 +822,31 @@ function collect_patty(player, patty) {
 
 function hit_jellyfish(player, jellyfish) {
     jellyfish.kill();
+	if(!in_shield)
     energy = 0;
+	in_shield = false;
 }
 
 
 function hit_clam(player, clam) {
 	clam.kill();
+	if(!in_shield)
 	energy = energy - 50;
+	in_shield = false;
 }	
 
+function hit_shield(player, bubble) {
+	shield.exists = true;
+	in_shield = true;
+	bubble.kill();
+}
 
 function hit_shark(player, shark) {
 	shark.kill();
-    if (!game_ended)
+	
+    if (!game_ended && !in_shield)
         game_over();
+	in_shield = false;
 }
 
 
