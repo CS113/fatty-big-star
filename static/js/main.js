@@ -73,7 +73,7 @@ function preload() {
 	game.load.image('clam', 'static/imgs/clam.png');
     game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
     game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
-	game.load.image('bubble_shield', 'static/imgs/transparent_bubble.png');
+	game.load.image('golden_bubble', 'static/imgs/golden_bubble.png');
 
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 45, 53);
@@ -126,8 +126,10 @@ var _____,
     // Music
     bg_music,
 
+	//Flags
     facing_right = true,
     game_ended = false,
+	in_shield = false,
 
     // Time and interval variables
     starting_time,
@@ -210,8 +212,10 @@ function create() {
     aura.exists = false;
 
 	
-	shield = game.add.sprite(0,0, 'bubble');
+	shield = game.add.sprite(0,0, 'golden_bubble');
 	shield.exists = false;
+	shield.scale.setTo(0.43, 0.43);
+	shield.anchor.setTo(0.43, 0.43);
 	
     jellyfishes = game.add.group();
     jellyfishes.enableBody = true;
@@ -452,9 +456,10 @@ function add_clam() {
 }
 
 function add_bubble_shield() {
-	var shield = bubble_shields.create(player.x, 0, 'bubble');
+	var shield = bubble_shields.create(player.x - 40, 0, 'golden_bubble');
 	shield.checkWorldBounds = true;
 	shield.outOfBoundsKill = true;
+	shield.scale.setTo(0.43, 0.43);
 }
 
 function add_ink() {
@@ -520,6 +525,14 @@ function update_physics() {
     aura.y = player.y;
 	shield.x = player.x;
 	shield.y = player.y;
+	if(in_shield)
+	{
+		shield.exists = true;
+	}
+	else
+	{
+		shield.exists = false;
+	}
 	
     platforms.forEach(function(item) {
         item.body.velocity.y = speed;
@@ -653,30 +666,31 @@ function update() {
     game.physics.arcade.collide(jellyfishes, platforms);
     game.physics.arcade.collide(patties, platforms);
     game.physics.arcade.collide(player,
-            patties,
-            collect_patty,
-            null,
-            this);
+		patties,
+		collect_patty,
+		null,
+		this);
     game.physics.arcade.overlap(player,
-            jellyfishes,
-            hit_jellyfish,
-            player_body_enabled,
-            this);
+		jellyfishes,
+		hit_jellyfish,
+		null,
+		this);
 	game.physics.arcade.overlap(player,
-			clams,
-			hit_clam,
-			player_body_enabled,
-			this);
+		clams,
+		hit_clam,
+		null,
+		this);
     game.physics.arcade.overlap(player,
         sharks,
         hit_shark,
-        player_body_enabled,
+        null,
         this);
 	game.physics.arcade.overlap(player,
 		bubble_shields,
 		hit_shield,
 		null,
 		this);
+		
 		
     // ===============================
     // ==== Add & delete entities ====
@@ -702,7 +716,7 @@ function update() {
     var shark_rate = fuzz_number(ENTITY_VALUE_MAP['shark'].SPAWN_RATE);
     if (game.time.time % shark_rate === 0 && altitude > 0) {
         add_shark();
-        //add_clam();
+        add_clam();
 		add_bubble_shield();
     }
 
@@ -783,34 +797,6 @@ function update() {
     energy_bar.width = (energy / ENERGY_CAP) * 212;
 }
 
-/*function detect_overlaps(sprite) {
-	game.physics.arcade.collide(sprite,
-            patties,
-            collect_patty,
-            null,
-            this);
-    game.physics.arcade.overlap(sprite,
-            jellyfishes,
-            hit_jellyfish,
-            player_body_enabled,
-            this);
-	game.physics.arcade.overlap(sprite,
-			clams,
-			hit_clam,
-			player_body_enabled,
-			this);
-    game.physics.arcade.overlap(sprite,
-        sharks,
-        hit_shark,
-        player_body_enabled,
-        this);
-	game.physics.arcade.overlap(sprite,
-		bubble_shields,
-		hit_shield,
-		null,
-		this);
-}*/
-
 function collect_patty(player, patty) {
     patty.kill();
 
@@ -826,35 +812,31 @@ function collect_patty(player, patty) {
 
 function hit_jellyfish(player, jellyfish) {
     jellyfish.kill();
+	if(!in_shield)
     energy = 0;
+	in_shield = false;
 }
 
 
 function hit_clam(player, clam) {
 	clam.kill();
+	if(!in_shield)
 	energy = energy - 50;
+	in_shield = false;
 }	
 
 function hit_shield(player, bubble) {
 	shield.exists = true;
+	in_shield = true;
 	bubble.kill();
-	player.body.enable = false;
 }
 
 function hit_shark(player, shark) {
 	shark.kill();
-    if (!game_ended)
+	
+    if (!game_ended && !in_shield)
         game_over();
-}
-
-function shield_damaged(player, shield) {
-	shield.exists = false;
-	player.body.enable = true;
-}
-
-function player_body_enabled()
-{
-	return player.body.enable;
+	in_shield = false;
 }
 
 
