@@ -80,7 +80,7 @@ function preload() {
     game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
     game.load.image('golden_bubble', 'static/imgs/golden_bubble.png');
 
-    game.load.spritesheet('patrick_swimming', 'static/imgs/patrick_swimming_sprites.png', 54, 50);
+    game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 46, 54);
     game.load.spritesheet('patrick_falling', 'static/imgs/patrick_falling_sprites.png', 45, 53);
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
 
@@ -199,14 +199,25 @@ function create() {
     player = game.add.sprite(
             game.world.width / 2,
             game.world.height - 150,
-            'patrick_swimming');
+            'patrick');
     game.physics.arcade.enable(player);
-    // player.body.bounce.y = 0.2;
-    // player.body.gravity.y = 300;
     player.body.immovable = true;
     player.body.collideWorldBounds = true;
-    player.animations.add('flying', [0, 1, 2, 3], 23, true);
-    player.animations.play('flying');
+
+    player.animations.add('swimming',
+                          [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+                          60,
+                          true);
+    player.animations.add('falling',
+                          [11, 12, 13],
+                          30,
+                          true);
+    player.animations.add('walking',
+                          [14, 15, 16, 17, 18, 19, 20, 21, 22],
+                          25,
+                          true);
+
+    player.animations.play('swimming');
     player.anchor.setTo(0.5, 0.5);
 
     aura = game.add.sprite(50, 50, 'aura_good');
@@ -631,7 +642,6 @@ function update_physics() {
         speed = 400;
         if (patty_boost_timer > 0) {
             speed = speed + PATTY_SPEED_BOOST;
-            //acceleration += PATTY_SPEED_BOOST;
             patty_boost_timer--;
         }
         energy--;
@@ -756,11 +766,16 @@ function update() {
     // ==== Controller ====
     // ====================
 
+    var walking = altitude === 0;
     var falling = (speed <= 0 && altitude > 0);
-    var flying = (altitude > 0); 
+    var swimming = (speed > 0 && altitude > 0); 
 
-    if (flying) {
-        player.animations.play('flying');
+    if (swimming) {
+        player.animations.play('swimming');
+    } else if (walking) {
+        player.animations.play('walking');
+    } else if (falling) {
+        player.animations.play('falling');
     } else {
         player.animations.stop();
     }
@@ -777,10 +792,10 @@ function update() {
             facing_right = true; 
             player.scale.x *= -1;
         }
-    } else if (!flying) {
-        // stand still, no horiz movement
+    } else if (walking) {
+        // stand still, no horiz movement, but only if walking!
         player.animations.stop();
-        player.frame = 0;
+        player.frame = 14;
     }
 
     // ===========================
