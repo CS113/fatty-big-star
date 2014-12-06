@@ -435,13 +435,19 @@ function add_bubble(x_coord, y_coord) {
 function add_jellyfish(x_coord, y_coord) {
     var jelly = jellyfishes.create(x_coord, y_coord, 'jellyfish');
 
+	var direction = (Math.random() < 0.5) ? -1 : 1;
     jelly.body.bounce.y = 0.7 + Math.random() * 0.2;
     jelly.checkWorldBounds = true; 
     jelly.outOfBoundsKill = true;
     jelly.animations.add('swim', [0, 1, 2, 3], 12, true);
     jelly.animations.play('swim');
-    jelly.oscl_coef = Math.random() * (100) + 200;
-    jelly.x_speed = jelly.oscl_coef - 100;
+    jelly.oscl_coef = (Math.random() * (100) + 200) * direction;
+	if(direction > 0) {
+		jelly.x_speed = (jelly.oscl_coef - 100);
+	}	
+	else {
+		jelly.x_speed = (jelly.oscl_coef + 100);
+	}	
     // Start each jellyfish at a random animation to look more real
     jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
 }
