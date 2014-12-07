@@ -659,7 +659,9 @@ function update_physics() {
         speed -= 30;
     }
 
-    altitude += Math.floor(speed * (1/60));
+    if (speed > 0) {
+        altitude += Math.floor(speed * (1/60));
+    }
 
     // Reset the player's horiz velocity (movement)
     player.body.velocity.x = 0;

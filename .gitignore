@@ -41,3 +41,6 @@ bin/
 include/
 lib/
 local/
+
+# Personal run script
+run_server.sh
