@@ -90,6 +90,8 @@ function preload() {
     game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
 
     game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
+	game.load.audio('patrick_hurt', ['static/sounds/patrick_hurt.mp3']);
+	game.load.audio('bubble_pop', ['static/sounds/bubble_pop.wav']);
 }
 
 
@@ -132,6 +134,7 @@ var _____,
 
     // Music
     bg_music,
+	sounds,
 
     //Flags
     facing_right = true,
@@ -173,6 +176,8 @@ function create() {
     if (!DEBUG) {
         bg_music.play();
     }
+	//Initialize sound
+	init_sound();
 
     // Add ocean background
     game.add.sprite(0, 0, 'ocean');
@@ -298,6 +303,16 @@ function create() {
     // Controls
     cursors = game.input.keyboard.createCursorKeys();
 	
+}
+
+function init_sound() {
+	patrick_hurt = game.add.audio('patrick_hurt');
+	bubble_pop = game.add.audio('bubble_pop');
+	
+	sounds = {
+    hurt: patrick_hurt,
+    bubble_pop: bubble_pop,
+};
 }
 
 function add_sound_control_button() {
@@ -850,9 +865,15 @@ function hit_jellyfish(player, jellyfish) {
 
 function hit_clam(player, clam) {
 	clam.kill();
-	if(!in_shield)
+	if(!in_shield) {
 	energy = energy - 50;
-	in_shield = false;
+	sounds["hurt"].play();
+	}
+	else {
+		sounds["bubble_pop"].play();
+	}
+	in_shield = false;    
+
 }	
 
 function hit_shield(player, bubble) {
