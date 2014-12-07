@@ -3,18 +3,25 @@
   <head> 
     <meta charset="UTF-8" />
     <title>Highscores</title>
+    <link rel="stylesheet"
+        href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="static/css/style.css">
   </head>
   <body>
     <br>
-    <br>
-    <b><a href="/game.html">RETURN TO GAME</a></b>
-    <br>
+    <a href="/game.html" role="button"
+            class="btn btn-default" aria-label="Left Align">
+        <span class="glyphicon glyphicon glyphicon glyphicon-play"
+            aria-hidden="true"></span>
+      &nbsp;Return to game
+    </a>
     <br>
     <div id="highscore_list"></div>
 
     <!-- jQUery for client -> ajax -> server communication for highscores -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
 
     <!-- TODO: Minify our main.js -->
     <script type="text/javascript">

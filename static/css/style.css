@@ -23,14 +23,6 @@ canvas {
 }
 
 
-#username_input {
-    position: absolute;
-    top: 200px;
-    left: 700px;
-}
-
-
-#username_field {
+#username_input_group {
     width: 300px;
-    height: 40px;
 }

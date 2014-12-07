@@ -172,7 +172,7 @@ function create() {
         hurt: game.add.audio('patrick_hurt'),
         bubble_pop: game.add.audio('bubble_pop'),
     };
-    sounds.bg_music.play();
+    //sounds.bg_music.play();
 
     // Enable physics for in-game entities
     game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -524,7 +524,6 @@ function squid_left() {
 
 
 function clicked(sprite) {
-    console.log("Clicked squid");
     sprite.destroy();
     game.time.events.remove(squid_timer);
     squid_timer = undefined;
@@ -532,7 +531,6 @@ function clicked(sprite) {
 
 
 function added_squid(){
-    console.log("added a squid");
     if (squid_timer === undefined) {
         squid_timer = game.time.events.loop(
                 Phaser.Timer.SECOND * 2.5 , add_ink, this);
@@ -681,6 +679,17 @@ function update_physics() {
  * 7. Update text & counters
  */
 function update() {
+    if (game_ended) {
+        var bubble_rate = fuzz_number(ENTITY_VALUE_MAP['bubble'].SPAWN_RATE);
+        if (game.time.time % bubble_rate === 0) {
+            add_grouped('bubble');
+        }
+        bubbles.forEach(function(item) {
+            item.body.velocity.y = 120;
+            item.angle = item.angle + ((Math.random() <= 0.5) ? 1 : -1);
+        }, this);
+        return;
+    }
     // ================================
     // ==== Update all game clocks ====
     // ================================
@@ -763,10 +772,6 @@ function update() {
         add_grouped('bubble');
     }
 
-    if (DEBUG && game.time.time % 16 === 0) {
-        console.log('patty rate ' + ENTITY_VALUE_MAP['patty'].SPAWN_RATE +
-            ' ' + patty_rate);
-    }
 
     // ==================
     // ===== Physics ====
@@ -820,14 +825,6 @@ function update() {
         var energy_percent = Math.floor(
                 (energy / ENERGY_CAP) * 100).toString() + "%";
         energy_text.text = energy_percent;
-
-        if (DEBUG) {
-            console.log(
-                    '<DEBUG>: Speed: ' + speed.toString() +
-                    ', Energy: ' + energy.toString() + 
-                    ', Altitude: ' + altitude.toString());
-            console.log(energy_percent);
-        }
     }
 
     energy_bar.width = (energy / ENERGY_CAP) * 212;
@@ -883,12 +880,12 @@ function hit_shark(player, shark) {
 }
 
 
-function add_end_text(text) {
+function add_end_text(text, x_coord, y_coord, size) {
     var game_over_text = game.add.text(
-            game.width / 2 - 100, 
-            game.height/2,
+            x_coord, 
+            y_coord,
             text, 
-            {font: '40px ' + GAME_TEXT, fill: '#FFF'});
+            {font: size + ' ' + GAME_TEXT, fill: '#add8e6'});
 }
 
 
@@ -923,16 +920,33 @@ function game_over() {
 
     game.add.sprite(0, 0, 'black_bg'); 
 
+    // re-add new bubbles group over the black background
+    bubbles = game.add.group();
+    bubbles.enableBody = true;
+
     final_altitude = altitude.toString();
-    add_end_text('Game Over!\nFinal score: ' + final_altitude);
 
-    game.add.text(game.width / 2 - 100, 
-                    (game.height/2) + 100,
-                    'Enter your username above!',
-                    {font: '40px' + GAME_TEXT, fill: '#FFF'});
+    add_end_text('Game Over!',
+                 game.width / 2 - 110,
+                 game.height/2 - 70,
+                 '40px');
 
-    var wrapper = $('#username_input');
-    wrapper.append('<input id="username_field" type="text"/>');
-    wrapper.append('<button id="send_highscores" ' +
-                   'onclick="send_highscores()">Submit!</button>');
+    add_end_text('Final score: ' + final_altitude,
+                 game.width / 2 - 70,
+                 game.height/2,
+                 '18px');
+
+    var body = $('body');
+
+    body.append(
+        '<div id="username_input_group" class="input-group" ' +
+        'style="position:absolute;left:' + ((game.width / 2) + 265).toString() +'px;' +
+        'top: ' + ((game.height / 2) - 100).toString() + 'px;">' +
+        '<input id="username_field" type="text" ' +
+           'class="form-control" placeholder="enter username">' + 
+        '<span class="input-group-btn">' + 
+           '<button onclick="send_highscores()" class="btn btn-default" ' +
+               'type="button">submit</button>' +
+        '</span>' +
+        '</div>');
 }
