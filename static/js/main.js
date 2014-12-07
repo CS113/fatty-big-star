@@ -855,7 +855,7 @@ function hit_jellyfish(player, jellyfish) {
 function hit_clam(player, clam) {
     clam.kill();
     if (!in_shield) {
-        energy = energy - 50;
+        energy = Math.max(energy - 50, 0);
         sounds.hurt.play();
     } else {
         sounds.bubble_pop.play();
