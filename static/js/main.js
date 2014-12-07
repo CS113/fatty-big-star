@@ -90,6 +90,8 @@ function preload() {
     game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
 
     game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
+    game.load.audio('patrick_hurt', ['static/sounds/patrick_hurt.mp3']);
+    game.load.audio('bubble_pop', ['static/sounds/bubble_pop.wav']);
 }
 
 
@@ -131,7 +133,7 @@ var _____,
     squid_timer,
 
     // Music
-    bg_music,
+    sounds,
 
     //Flags
     facing_right = true,
@@ -165,14 +167,15 @@ function update_timer() {
  *
  */
 function create() {
+    sounds = {
+        bg_music: game.add.audio('background_music'),
+        hurt: game.add.audio('patrick_hurt'),
+        bubble_pop: game.add.audio('bubble_pop'),
+    };
+    sounds.bg_music.play();
+
     // Enable physics for in-game entities
     game.physics.startSystem(Phaser.Physics.ARCADE);
-
-    // Add background sound
-    bg_music = game.add.audio('background_music');
-    if (!DEBUG) {
-        bg_music.play();
-    }
 
     // Add ocean background
     game.add.sprite(0, 0, 'ocean');
@@ -300,6 +303,7 @@ function create() {
 	
 }
 
+
 function add_sound_control_button() {
     sound_off_button = game.add.sprite(game.width - 50, 40, 'sound_off_button');
     sound_off_button.width = 25;
@@ -317,13 +321,13 @@ function add_sound_control_button() {
 }
 
 function sound_off() {
-    bg_music.volume = 0;
+    sounds.bg_music.volume = 0;
     sound_off_button.width = 0;
     sound_on_button.width = 25;
 }
 
 function sound_on() {
-    bg_music.volume = 1;
+    sounds.bg_music.volume = 1;
     sound_off_button.width = 25;
     sound_on_button.width = 0;
 }
@@ -435,13 +439,19 @@ function add_bubble(x_coord, y_coord) {
 function add_jellyfish(x_coord, y_coord) {
     var jelly = jellyfishes.create(x_coord, y_coord, 'jellyfish');
 
+	var direction = (Math.random() < 0.5) ? -1 : 1;
     jelly.body.bounce.y = 0.7 + Math.random() * 0.2;
     jelly.checkWorldBounds = true; 
     jelly.outOfBoundsKill = true;
     jelly.animations.add('swim', [0, 1, 2, 3], 12, true);
     jelly.animations.play('swim');
-    jelly.oscl_coef = Math.random() * (100) + 200;
-    jelly.x_speed = jelly.oscl_coef - 100;
+    jelly.oscl_coef = (Math.random() * (100) + 200) * direction;
+	if(direction > 0) {
+		jelly.x_speed = (jelly.oscl_coef - 100);
+	}	
+	else {
+		jelly.x_speed = (jelly.oscl_coef + 100);
+	}	
     // Start each jellyfish at a random animation to look more real
     jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
 }
@@ -836,24 +846,31 @@ function collect_patty(player, patty) {
 
 function hit_jellyfish(player, jellyfish) {
     jellyfish.kill();
-	if(!in_shield)
-    energy = 0;
+	if (!in_shield) {
+        energy = 0;
+    }
 	in_shield = false;
 }
 
 
 function hit_clam(player, clam) {
-	clam.kill();
-	if(!in_shield)
-	energy = energy - 50;
-	in_shield = false;
+    clam.kill();
+    if (!in_shield) {
+        energy = energy - 50;
+        sounds.hurt.play();
+    } else {
+        sounds.bubble_pop.play();
+    }
+    in_shield = false;    
 }	
+
 
 function hit_shield(player, bubble) {
 	shield.exists = true;
 	in_shield = true;
 	bubble.kill();
 }
+
 
 function hit_shark(player, shark) {
 	shark.kill();
