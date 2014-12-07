@@ -90,8 +90,8 @@ function preload() {
     game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
 
     game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
-	game.load.audio('patrick_hurt', ['static/sounds/patrick_hurt.mp3']);
-	game.load.audio('bubble_pop', ['static/sounds/bubble_pop.wav']);
+    game.load.audio('patrick_hurt', ['static/sounds/patrick_hurt.mp3']);
+    game.load.audio('bubble_pop', ['static/sounds/bubble_pop.wav']);
 }
 
 
@@ -133,8 +133,7 @@ var _____,
     squid_timer,
 
     // Music
-    bg_music,
-	sounds,
+    sounds,
 
     //Flags
     facing_right = true,
@@ -168,16 +167,15 @@ function update_timer() {
  *
  */
 function create() {
+    sounds = {
+        bg_music: game.add.audio('background_music'),
+        hurt: game.add.audio('patrick_hurt'),
+        bubble_pop: game.add.audio('bubble_pop'),
+    };
+    sounds.bg_music.play();
+
     // Enable physics for in-game entities
     game.physics.startSystem(Phaser.Physics.ARCADE);
-
-    // Add background sound
-    bg_music = game.add.audio('background_music');
-    if (!DEBUG) {
-        bg_music.play();
-    }
-	//Initialize sound
-	init_sound();
 
     // Add ocean background
     game.add.sprite(0, 0, 'ocean');
@@ -305,15 +303,6 @@ function create() {
 	
 }
 
-function init_sound() {
-	patrick_hurt = game.add.audio('patrick_hurt');
-	bubble_pop = game.add.audio('bubble_pop');
-	
-	sounds = {
-    hurt: patrick_hurt,
-    bubble_pop: bubble_pop,
-};
-}
 
 function add_sound_control_button() {
     sound_off_button = game.add.sprite(game.width - 50, 40, 'sound_off_button');
@@ -332,13 +321,13 @@ function add_sound_control_button() {
 }
 
 function sound_off() {
-    bg_music.volume = 0;
+    sounds.bg_music.volume = 0;
     sound_off_button.width = 0;
     sound_on_button.width = 25;
 }
 
 function sound_on() {
-    bg_music.volume = 1;
+    sounds.bg_music.volume = 1;
     sound_off_button.width = 25;
     sound_on_button.width = 0;
 }
@@ -857,30 +846,31 @@ function collect_patty(player, patty) {
 
 function hit_jellyfish(player, jellyfish) {
     jellyfish.kill();
-	if(!in_shield)
-    energy = 0;
+	if (!in_shield) {
+        energy = 0;
+    }
 	in_shield = false;
 }
 
 
 function hit_clam(player, clam) {
-	clam.kill();
-	if(!in_shield) {
-	energy = energy - 50;
-	sounds["hurt"].play();
-	}
-	else {
-		sounds["bubble_pop"].play();
-	}
-	in_shield = false;    
-
+    clam.kill();
+    if (!in_shield) {
+        energy = energy - 50;
+        sounds.hurt.play();
+    } else {
+        sounds.bubble_pop.play();
+    }
+    in_shield = false;    
 }	
+
 
 function hit_shield(player, bubble) {
 	shield.exists = true;
 	in_shield = true;
 	bubble.kill();
 }
+
 
 function hit_shark(player, shark) {
 	shark.kill();
