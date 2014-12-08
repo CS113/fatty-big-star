@@ -74,6 +74,7 @@ def highscores_get():
         scores = sorted([row for row in rd],
                         key=lambda x: int(x[1]),
                         reverse=True)
+        scores = scores[:25]
     return jsonify({'scores': scores})
 
 

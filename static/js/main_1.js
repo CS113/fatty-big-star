@@ -856,14 +856,12 @@ function update() {
     // ===========================
     // ==== Text and counters ====
     // ===========================
-    if (game.time.time % 4 === 0) {
-        altitude_as_string = numberWithCommas(altitude);
-        altitude_text.text = 'Altitude: ' + altitude_as_string;
+    altitude_as_string = numberWithCommas(altitude);
+    altitude_text.text = 'Altitude: ' + altitude_as_string;
 
-        var energy_percent = Math.floor(
-                (energy / ENERGY_CAP) * 100).toString() + "%";
-        energy_text.text = energy_percent;
-    }
+    var energy_percent = Math.floor(
+            (energy / ENERGY_CAP) * 100).toString() + "%";
+    energy_text.text = energy_percent;
 
     energy_bar.width = (energy / ENERGY_CAP) * 212;
 }
@@ -964,16 +962,16 @@ function game_over() {
 
     add_end_text('Game Over!',
                  game.width / 2 - 110,
-                 game.height/2 - 70,
+                 game.height/2 - 170,
                  '40px');
 
     add_end_text('Final score: ' + final_altitude,
                  game.width / 2 - 70,
-                 game.height/2,
+                 game.height/2 + 170,
                  '18px');
 
-    press_space_blink_text = add_end_text('Press space to skip',
-                                          game.width / 2 - 80,
+    press_space_blink_text = add_end_text('Press ? to skip',
+                                          game.width / 2 - 65,
                                           game.height - 70,
                                           '18px');
     game.time.events.loop(Phaser.Timer.SECOND * 0.6,
@@ -988,7 +986,7 @@ function game_over() {
             'left:' +
             (($( window ).width() / 2) - 150).toString() + 'px;' +
             'top: ' +
-            (($( window ).height() / 2) - 150).toString() + 'px;">' +
+            (game.height / 2).toString() + 'px;">' +
         '<input id="username_field" type="text" ' +
            'class="form-control" placeholder="username, then press enter">' + 
         '<span class="input-group-btn">' + 
@@ -1013,7 +1011,7 @@ function game_over() {
     });
 
     body.keypress(function( event ) {
-        if (event.which === 32) {
+        if (event.which === 63) {
             window.location.reload();
         }
     });

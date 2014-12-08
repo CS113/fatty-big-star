@@ -2,36 +2,60 @@
 <html lang="en"> 
   <head> 
     <meta charset="UTF-8" />
-    <title>Highscores</title>
+    <title>Highscores -- Fatty Big Star</title>
     <link rel="stylesheet"
         href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="static/css/style.css">
+    <link rel="stylesheet" type="text/css" href="static/css/style_1.css">
   </head>
   <body>
     <br>
-    <a href="/game.html" role="button"
+    <div class="row header-row">
+      <a href="/game.html" role="button"
             class="btn btn-default" aria-label="Left Align">
         <span class="glyphicon glyphicon glyphicon glyphicon-play"
             aria-hidden="true"></span>
-      &nbsp;Return to game
-    </a>
+        &nbsp;Return to game
+      </a>
+    </div>
     <br>
-    <div id="highscore_list"></div>
+
+    <div class="row">
+    <div class="well col-md-4 col-md-offset-4">
+    <table id="highscore_list" class="table table-striped">
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Highest altitude</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- jQuery inserts here -->
+      </tbody>
+    </table>
+    </div>
+</div>
 
     <!-- jQUery for client -> ajax -> server communication for highscores -->
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 
     <!-- TODO: Minify our main.js -->
     <script type="text/javascript">
+        function numberWithCommas(n) { 
+            var parts=n.toString().split("."); 
+            return parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",") + 
+                (parts[1] ? "." + parts[1] : "");
+        }
+
         var get_from = '/api/highscore_get';
         $.get(get_from, function(response) {
             var scores_list = response.scores;
-            var wrapper = $('#highscore_list');
+            var wrapper = $('#highscore_list').find('tbody');
             for (var i = 0; i < scores_list.length; i++) {
-                wrapper.append('Name: <b>' + scores_list[i][0] + '</b>  --  ');
-                wrapper.append('Score: <b>' + scores_list[i][1] + '</b>');
-                wrapper.append('<br>');
-                wrapper.append('<br>');
+                wrapper.append('<tr><td>' +
+                    numberWithCommas(scores_list[i][0]) +
+                    '</td><td>' +
+                    numberWithCommas(scores_list[i][1]) +
+                    '</td></tr>');
             }
             // alert(scores_list);
         });
