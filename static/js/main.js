@@ -9,7 +9,9 @@ var DEBUG = true,  // toggle this variable
     ALTITUDE_CHUNK = 4000,
     GAME_TEXT = 'Lucida Grande',
     BLACK_HEX = '#000',
-    GREEN_HEX = '#83F52C';
+    GREEN_HEX = '#83F52C',
+    COOKIE_USERNAME_KEY = 'fatty_big_star_username',
+    COOKIE_EXPIRATION_DAYS = 7;
 
 var game = new Phaser.Game(
         GAME_WIDTH,
@@ -80,8 +82,13 @@ function preload() {
     game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
     game.load.image('golden_bubble', 'static/imgs/golden_bubble.png');
 
+
+    game.load.image('coral_ledge', 'static/imgs/coral_ledge.png');
+    game.load.spritesheet('coral', 'static/imgs/coral_sprite.png', 300, 208);
+    game.load.image('coral_side', 'static/imgs/coral_side.png');
+    game.load.spritesheet('seaweed', 'static/imgs/seaweed_sprite.png', 48, 60);
+
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 46, 54);
-    game.load.spritesheet('patrick_falling', 'static/imgs/patrick_falling_sprites.png', 45, 53);
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
 
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
@@ -122,12 +129,15 @@ var _____,
     inks,
     squids,
 	clams,
+    corals,
+    seaweeds,
     bubble_shields,
     shield,
 
     // Text
     altitude_text,
     energy_text,
+    press_space_blink_text,
 
     //Timer,
     squid_timer,
@@ -138,25 +148,7 @@ var _____,
     //Flags
     facing_right = true,
     game_ended = false,
-    in_shield = false,
-
-    // Time and interval variables
-    starting_time,
-    elapsed,
-    milliseconds = 0,
-    seconds = 0;
-
-
-/*
- * Called on every game update(), updates the counters for
- * ingame seconds, elapsed time, and milliseconds. Important
- * because the time variables are used in game physics calculations.
- */
-function update_timer() {
-    seconds = Math.floor(game.time.time / 1000);
-    milliseconds = Math.floor(game.time.time);
-    elapsed = game.time.time - starting_time;
-}
+    in_shield = false;
 
 
 /*
@@ -257,9 +249,50 @@ function create() {
 	
 	clams = game.add.group();
 	clams.enableBody = true;
+
+    seaweeds = game.add.group();
+    seaweeds.enableBody = true;
+
+    corals = game.add.group();
+    corals.enableBody = true;
 	
     bubble_shields = game.add.group();
     bubble_shields.enableBody = true;
+
+    // ==========================================
+    // ======= Initial background scenery =======
+    // ==========================================
+    var scenery_y_base = game.world.height - GROUND_HEIGHT - 170;
+
+    var coral_ledge = platforms.create(0, scenery_y_base, 'coral_ledge');
+    coral_ledge.scale.setTo(0.5, 0.5);
+    var coral_ledge_2 = platforms.create(game.width + 110,
+                                         scenery_y_base - 50,
+                                         'coral_ledge');
+    coral_ledge_2.scale.setTo(0.7, 0.7);
+    coral_ledge_2.scale.x *= -1; 
+
+    var init_sw_1 = seaweeds.create(150, scenery_y_base + 120, 'seaweed');
+    var init_sw_2 = seaweeds.create(550, scenery_y_base + 200, 'seaweed');
+    init_sw_1.animations.add('flapping', [0, 1, 2], 15, true);
+    init_sw_2.animations.add('flapping', [2, 1, 0], 15, true);
+    init_sw_1.play('flapping');
+    init_sw_2.play('flapping');
+
+    var coral_1 = corals.create(150, scenery_y_base + 225, 'coral');
+    coral_1.animations.add('flapping', [0, 1, 2, 3], 20, true);
+    coral_1.scale.setTo(0.2, 0.2);
+    coral_1.play('flapping');
+
+    var coral_2 = corals.create(600, scenery_y_base + 120, 'coral');
+    coral_2.animations.add('flapping', [3, 4, 0, 1], 20, true);
+    coral_2.scale.setTo(0.4, 0.4);
+    coral_2.play('flapping');
+
+    var coral_3 = corals.create(550, scenery_y_base + 130, 'coral');
+    coral_3.animations.add('flapping', [2, 1, 3, 0], 20, true);
+    coral_3.scale.setTo(0.3, 0.3);
+    coral_3.play('flapping');
 
     // Initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
@@ -284,7 +317,7 @@ function create() {
             10,
             'Altitude: 0', 
             { font: '20px ' + GAME_TEXT,
-                fill: BLACK_HEX }
+                fill: '#5DFC0A' }
             );
 
     energy_text = game.add.text(
@@ -294,9 +327,6 @@ function create() {
             { font: '11px ' + GAME_TEXT,
                 fill: GREEN_HEX }
             );
-
-    starting_time = game.time.time;
-    elapsed = game.time.time - starting_time;
 
     // Controls
     cursors = game.input.keyboard.createCursorKeys();
@@ -478,6 +508,7 @@ function add_shark() {
 
 function add_clam() {
 	var clam = clams.create(player.x - 22.8, 0, 'clam');
+    clam.scale.setTo(0.4, 0.4);
 	clam.checkWorldBounds = true;
 	clam.outOfBoundsKill = true;
 }
@@ -602,16 +633,25 @@ function update_physics() {
     }, this);
 
     clams.forEach(function(item) {
-        item.scale.setTo(0.4, 0.4);
         item.body.velocity.y = speed * 2;
         item.body.acceleration.y = acceleration;
-        item.body.gravity.y = 300;
+        // item.body.gravity.y = 300;
         if (speed < 0 || acceleration < 0) {
             item.body.velocity.y = 400;
             item.body.acceleration.y = 200;
             item.body.gravity.y = 150;
         }
     }, this);	
+
+    seaweeds.forEach(function(item) {
+        item.body.velocity.y = speed;
+        item.body.acceleration.x = acceleration;
+    }, this);
+
+    corals.forEach(function(item) {
+        item.body.velocity.y = speed;
+        item.body.acceleration.x = acceleration;
+    }, this);
 
     bubble_shields.forEach(function(item) {
         item.body.velocity.y = speed * 1.5;
@@ -640,9 +680,8 @@ function update_physics() {
     // Game over when Patrick has been falling for a little bit
     // Safe assumption because all entities are killed after
     // they fall off the map, Patrick has no way of getting up
-    if (speed < -1500 || altitude < 0) {
-        if (!game_ended)
-            game_over();
+    if ((speed < -1000 || altitude < 0) && !game_ended) {
+        game_over();
     }
 
     // Exhaust effect of patties so they don't last forever
@@ -671,7 +710,7 @@ function update_physics() {
  * functionality and depend on each other, the separate functions
  * must be divided in sequences.
  *
- * 1. Update all game clocks
+ * 1. Endgame state check
  * 2. Check for all collisions
  * 3. Insert or delete entities
  * 4. Update physics
@@ -679,6 +718,9 @@ function update_physics() {
  * 7. Update text & counters
  */
 function update() {
+    // ==============================
+    // ==== Endgame state check =====
+    // ==============================
     if (game_ended) {
         var bubble_rate = fuzz_number(ENTITY_VALUE_MAP['bubble'].SPAWN_RATE);
         if (game.time.time % bubble_rate === 0) {
@@ -690,10 +732,6 @@ function update() {
         }, this);
         return;
     }
-    // ================================
-    // ==== Update all game clocks ====
-    // ================================
-    update_timer();
 
     // ==============================
     // ==== Check for collisions ====
@@ -881,10 +919,7 @@ function hit_shark(player, shark) {
 
 
 function add_end_text(text, x_coord, y_coord, size) {
-    var game_over_text = game.add.text(
-            x_coord, 
-            y_coord,
-            text, 
+    return game.add.text(x_coord, y_coord, text, 
             {font: size + ' ' + GAME_TEXT, fill: '#add8e6'});
 }
 
@@ -904,6 +939,9 @@ function send_highscores() {
             if (!send_status) {
                 add_end_text('HIGHSCORE SEND ERROR');
             } else {
+                $.cookie(COOKIE_USERNAME_KEY,
+                         username,
+                         {expires: 7});
                 window.location.reload();
             }
         }, 'json'
@@ -913,8 +951,6 @@ function send_highscores() {
 
 function game_over() {
     game_ended = true;
-    console.log("Game Over"); 
-
     speed = 0;
     acceleration = 0;
 
@@ -936,17 +972,49 @@ function game_over() {
                  game.height/2,
                  '18px');
 
-    var body = $('body');
+    press_space_blink_text = add_end_text('Press space to skip',
+                                          game.width / 2 - 80,
+                                          game.height - 70,
+                                          '18px');
+    game.time.events.loop(Phaser.Timer.SECOND * 0.6,
+                          function(text) {
+                              text.visible = !text.visible;
+                          }, this, press_space_blink_text);
 
+    var body = $('body');
     body.append(
         '<div id="username_input_group" class="input-group" ' +
-        'style="position:absolute;left:' + ((game.width / 2) + 265).toString() +'px;' +
-        'top: ' + ((game.height / 2) - 100).toString() + 'px;">' +
+        'style="position:absolute;' +
+            'left:' +
+            (($( window ).width() / 2) - 150).toString() + 'px;' +
+            'top: ' +
+            (($( window ).height() / 2) - 150).toString() + 'px;">' +
         '<input id="username_field" type="text" ' +
-           'class="form-control" placeholder="enter username">' + 
+           'class="form-control" placeholder="username, then press enter">' + 
         '<span class="input-group-btn">' + 
            '<button onclick="send_highscores()" class="btn btn-default" ' +
-               'type="button">submit</button>' +
+               'type="button">enter</button>' +
         '</span>' +
         '</div>');
+    
+    var prev_username = $.cookie(COOKIE_USERNAME_KEY);
+    if (prev_username !== undefined) {
+        $('#username_field').val(prev_username);
+    }
+
+    // autoselect the input field
+    $('#username_field').select();
+
+    // add listener so user can submit pressing enter
+    $('#username_field').keypress(function( event ) {
+        if (event.which === 13) {
+            send_highscores();
+        }
+    });
+
+    body.keypress(function( event ) {
+        if (event.which === 32) {
+            window.location.reload();
+        }
+    });
 }
