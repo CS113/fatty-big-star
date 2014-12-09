@@ -353,8 +353,29 @@ function create() {
     );
 
     cursors = game.input.keyboard.createCursorKeys();
+	window.addEventListener("deviceorientation", this.handleOrientation.bind(this), true);
 }
 
+
+
+function handleOrientation(e) {
+  var x = e.gamma; // range [-90,90]
+  
+  if (x < 0) {
+	player.body.velocity.x = -PATRICK_VELOCITY_X;
+	if (facing_right) {
+		facing_right = false; 
+		player.scale.x *= -1;
+		}
+	} 
+	else if (x > 0) {
+	player.body.velocity.x = PATRICK_VELOCITY_X;
+	if (!facing_right) {
+		facing_right = true; 
+		player.scale.x *= -1;
+		}
+	}
+}
 
 function add_sound_control_button() {
     function sound_off() {
