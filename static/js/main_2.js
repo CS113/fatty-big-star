@@ -534,6 +534,8 @@ function add_jellyfish(x_coord, y_coord) {
 
 
 function add_shark() {
+    sounds.pop.play();
+
     var y_coord = 300;
     var coin = (Math.random() <= 0.5) ? -1 : 1;
     var x_coord = (coin === -1) ? GAME_WIDTH : 0;
