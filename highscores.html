@@ -24,6 +24,7 @@
     <table id="highscore_list" class="table table-striped">
       <thead>
         <tr>
+          <th>Rank #</th>
           <th>Username</th>
           <th>Highest altitude</th>
         </tr>
@@ -51,13 +52,17 @@
             var scores_list = response.scores;
             var wrapper = $('#highscore_list').find('tbody');
             for (var i = 0; i < scores_list.length; i++) {
-                wrapper.append('<tr><td>' +
+                wrapper.append(
+                    '<tr><td>' +
+                    (i + 1).toString() + 
+                    '</td>' +
+                    '<td>' +
                     numberWithCommas(scores_list[i][0]) +
-                    '</td><td>' +
+                    '</td>' + 
+                    '<td>' +
                     numberWithCommas(scores_list[i][1]) +
                     '</td></tr>');
             }
-            // alert(scores_list);
         });
     </script>
   </body>
