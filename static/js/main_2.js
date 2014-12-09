@@ -122,6 +122,7 @@ function preload() {
     game.load.audio('splat', ['static/sounds/splat.mp3']);
     game.load.audio('intro_gong', ['static/sounds/intro_gong.mp3']);
     game.load.audio('whoosh', ['static/sounds/whoosh.mp3']);
+    game.load.audio('happy_bg', ['static/sounds/happy.mp3']);
 }
 
 
@@ -148,7 +149,7 @@ var _____,
     energy_bar,
     inks,
     squids,
-	clams,
+    clams,
     corals,
     seaweeds,
     bubble_shields,
@@ -181,18 +182,16 @@ var _____,
  */
 function create() {
     sounds = {
-        hurt: game.add.audio('hurt'),
-        pop: game.add.audio('pop'),
-        hit: game.add.audio('hit'),
-        splat: game.add.audio('splat'),
-        intro: game.add.audio('intro_gong'),
-        whoosh: game.add.audio('whoosh'),
+        pop: game.add.audio('pop'),  // shark enters
+        hurt: game.add.audio('hurt'),  // hit by obstacle
+        splat: game.add.audio('splat'),  // ink on screen
+        hit: game.add.audio('hit', 0.7),  // hit shield
+        intro: game.add.audio('intro_gong', 0.4),
+        whoosh: game.add.audio('whoosh', 0.2),  // hit patty
+        happy_bg: game.add.audio('happy_bg', 0.3, true),
     };
-    sounds.hit.volume = 0.7;
-    sounds.intro.volume = 0.4;
-    sounds.whoosh.volume = 0.2;
-
     sounds.intro.play();
+    sounds.happy_bg.play();
 
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
@@ -266,8 +265,8 @@ function create() {
     inks = game.add.group();
     inks.enableBody = true;
 	
-	clams = game.add.group();
-	clams.enableBody = true;
+    clams = game.add.group();
+    clams.enableBody = true;
 
     seaweeds = game.add.group();
     seaweeds.enableBody = true;
