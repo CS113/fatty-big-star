@@ -117,9 +117,10 @@ function preload() {
 
     game.load.audio('hurt', ['static/sounds/hurt.mp3']);
     game.load.audio('pop', ['static/sounds/pop.mp3']);
-    game.load.audio('enhance', ['static/sounds/enhance.mp3']);
+    game.load.audio('hit', ['static/sounds/enhance.mp3']);
     game.load.audio('splat', ['static/sounds/splat.mp3']);
     game.load.audio('intro_gong', ['static/sounds/intro_gong.mp3']);
+    game.load.audio('whoosh', ['static/sounds/whoosh.mp3']);
 }
 
 
@@ -181,9 +182,10 @@ function create() {
     sounds = {
         hurt: game.add.audio('hurt'),
         pop: game.add.audio('pop'),
-        enhance: game.add.audio('enhance'),
+        hit: game.add.audio('hit'),
         splat: game.add.audio('splat'),
         intro: game.add.audio('intro_gong'),
+        whoosh: game.add.audio('whoosh'),
     };
     sounds.intro.play();
 
@@ -854,7 +856,7 @@ function update() {
 
 
 function hit_patty(player, patty) {
-    sounds.enhance.play();
+    sounds.whoosh.play();
     patty.kill();
 
     aura.reset(player.x, player.y);
@@ -879,11 +881,12 @@ function hit_jellyfish(player, jellyfish) {
 
 function hit_clam(player, clam) {
     clam.kill();
-    if (!in_shield) {
+    if (in_shield) {
+        sounds.hit.play();
+        return;
+    } else {
         energy = Math.max(energy - 50, 0);
         sounds.hurt.play();
-    } else {
-        sounds.pop.play();
     }
     in_shield = false;    
 }	
