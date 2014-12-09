@@ -187,6 +187,10 @@ function create() {
         intro: game.add.audio('intro_gong'),
         whoosh: game.add.audio('whoosh'),
     };
+    sounds.hit.volume = 0.7;
+    sounds.intro.volume = 0.4;
+    sounds.whoosh.volume = 0.2;
+
     sounds.intro.play();
 
     game.physics.startSystem(Phaser.Physics.ARCADE);
