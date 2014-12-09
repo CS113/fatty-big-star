@@ -9,6 +9,7 @@ var DEBUG = true,
     PATRICK_VELOCITY_Y_GRAVITY_LOSS = 30,
     PATTY_SPEED_BOOST = 350,
     ENERGY_CAP = 500,
+    SHIELD_HEALTH = 5,
     ALTITUDE_CHUNK = 4000,
     ALTITUDE_SPEED_INCREASE_RATE = 1 / 60,
     SPEED_GAME_LOSS_THRESHHOLD = -1000,
@@ -168,7 +169,7 @@ var _____,
     facing_right = true,
     game_ended = false,
     set_spawn_timers = false,
-    in_shield = false;
+    shield_life = 0;  // bubble shields can soak 5 hits
 
 
 /*
@@ -637,7 +638,7 @@ function update_physics() {
     shield.x = player.x;
     shield.y = player.y;
 
-    shield.exists = in_shield;
+    shield.exists = (shield_life > 0) ? true : false;
 	
     platforms.forEach(function(item) {
         item.body.velocity.y = speed;
@@ -874,42 +875,45 @@ function hit_patty(player, patty) {
 
 
 function hit_jellyfish(player, jellyfish) {
-    sounds.hurt.play();
     jellyfish.kill();
-	if (!in_shield) {
+	if (shield_life === 0) {
         energy = 0;
+        sounds.hurt.play();
+    } else {
+        shield_life--;
+        sounds.hit.play();
     }
-	in_shield = false;
 }
 
 
 function hit_clam(player, clam) {
     clam.kill();
-    if (in_shield) {
-        sounds.hit.play();
-        return;
-    } else {
-        energy = Math.max(energy - 50, 0);
+    if (shield_life === 0) {
         sounds.hurt.play();
+        energy = Math.max(energy - 50, 0);
+    } else {
+        shield_life--;
+        sounds.hit.play();
     }
-    in_shield = false;    
 }	
 
 
 function hit_shield(player, bubble) {
 	shield.exists = true;
-	in_shield = true;
+	shield_life = SHIELD_HEALTH;
 	bubble.kill();
 }
 
 
 function hit_shark(player, shark) {
-    sounds.hurt.play();
 	shark.kill();
-    if (!game_ended && !in_shield) {
+    if (!game_ended && shield_life === 0) {
+        sounds.hurt.play();
         game_over();
+    } else {
+        shield_life--;
+        sounds.hit.play();
     }
-	in_shield = false;
 }
 
 
