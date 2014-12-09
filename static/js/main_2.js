@@ -283,23 +283,23 @@ function create() {
 
     var init_sw_1 = seaweeds.create(150, scenery_y_base + 120, 'seaweed');
     var init_sw_2 = seaweeds.create(550, scenery_y_base + 200, 'seaweed');
-    init_sw_1.animations.add('flapping', [0, 1, 2], 15, true);
-    init_sw_2.animations.add('flapping', [2, 1, 0], 15, true);
+    init_sw_1.animations.add('flapping', [0, 1, 2], 4, true);
+    init_sw_2.animations.add('flapping', [2, 1, 0], 3, true);
     init_sw_1.play('flapping');
     init_sw_2.play('flapping');
 
     var coral_1 = corals.create(150, scenery_y_base + 225, 'coral');
-    coral_1.animations.add('flapping', [0, 1, 2, 3], 20, true);
+    coral_1.animations.add('flapping', [0, 1, 2, 3], 8, true);
     coral_1.scale.setTo(0.2, 0.2);
     coral_1.play('flapping');
 
     var coral_2 = corals.create(600, scenery_y_base + 120, 'coral');
-    coral_2.animations.add('flapping', [3, 4, 0, 1], 20, true);
+    coral_2.animations.add('flapping', [3, 4, 0, 1], 10, true);
     coral_2.scale.setTo(0.4, 0.4);
     coral_2.play('flapping');
 
     var coral_3 = corals.create(550, scenery_y_base + 130, 'coral');
-    coral_3.animations.add('flapping', [2, 1, 3, 0], 20, true);
+    coral_3.animations.add('flapping', [2, 1, 3, 0], 6, true);
     coral_3.scale.setTo(0.3, 0.3);
     coral_3.play('flapping');
 
