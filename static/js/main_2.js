@@ -582,10 +582,15 @@ function add_shark() {
 
 
 function add_clam() {
-	var clam = clams.create(player.x - 22.8, 0, 'clam');
+    var clam = clams.create(player.x - 22.8, 0, 'clam');
     clam.scale.setTo(0.4, 0.4);
-	clam.checkWorldBounds = true;
-	clam.outOfBoundsKill = true;
+    clam.checkWorldBounds = true;
+    clam.outOfBoundsKill = true;
+    clam.angle = Math.floor(181 * Math.random());
+
+    // rotate clams at random rates and directions
+    clam.rotate_dir = (Math.random() < 0.5) ? 1 : -1;
+    clam.rotate_rate = Math.ceil(1 + (Math.random() * 4));
 }
 
 
@@ -714,6 +719,7 @@ function update_physics() {
             item.body.acceleration.y = 200;
             item.body.gravity.y = 150;
         }
+        item.angle += (item.rotate_rate * item.rotate_dir);
     }, this);	
 
     seaweeds.forEach(function(item) {
