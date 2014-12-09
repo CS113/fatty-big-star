@@ -3,6 +3,7 @@ var DEBUG = true,
     GAME_WIDTH = 800,
     GAME_HEIGHT = 600,
     GROUND_HEIGHT = 128,
+    SOUND_BUTTON_WIDTH = 25,
     PATRICK_VELOCITY_X = 300,
     PATRICK_VELOCITY_Y_PATTY = 400,
     PATRICK_VELOCITY_Y_GRAVITY_LOSS = 30,
@@ -128,10 +129,6 @@ var _____,
     altitude = 0,
     energy = 0,
     patty_boost_timer = 0,
-
-    // Every 4000 altitude, the game gets 'harder', powerups and patties
-    // are spawned rarer while obstacles are spawned more frequently
-    // This # was chosen b/c 4000 altitude gets traversed every few seconds
     altitude_checkmark = ALTITUDE_CHUNK,
     final_altitude = 0,
 
@@ -230,14 +227,13 @@ function create() {
 
     aura = game.add.sprite(50, 50, 'aura_good');
     aura.animations.add('revive', 
-            [0, 1, 2, 3, 4, 5, 6, 7,
-            8, 9, 10, 11, 12]);
+                        [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
 
     aura.scale.setTo(0.5, 0.5);
     aura.anchor.setTo(0.5, 0.5);
     aura.exists = false;
 
-    shield = game.add.sprite(0,0, 'golden_bubble');
+    shield = game.add.sprite(0, 0, 'golden_bubble');
     shield.exists = false;
     shield.scale.setTo(0.43, 0.43);
     shield.anchor.setTo(0.43, 0.43);
@@ -275,7 +271,9 @@ function create() {
     // ===== Initial background scenery =====
     var scenery_y_base = game.world.height - GROUND_HEIGHT - 170;
 
-    var coral_ledge = platforms.create(0, scenery_y_base, 'coral_ledge');
+    var coral_ledge = platforms.create(0,
+                                       scenery_y_base,
+                                       'coral_ledge');
     coral_ledge.scale.setTo(0.5, 0.5);
     var coral_ledge_2 = platforms.create(game.width + 110,
                                          scenery_y_base - 50,
@@ -316,42 +314,60 @@ function create() {
     // ===== Buttons & controls seperate from game world =====
     add_sound_control_button();
 	
-    empty_energy_bar = game.add.sprite(game.width - (216 + 10), 10,
-            'empty_energy_bar');
+    empty_energy_bar = game.add.sprite(game.width - (216 + 10),
+                                       10,
+                                       'empty_energy_bar');
     empty_energy_bar.scale.setTo(1, 0.5);
-
-    energy_bar = game.add.sprite(game.width - (216 + 10), 10,
-            'energy_bar');
+    energy_bar = game.add.sprite(game.width - (216 + 10),
+                                 10,
+                                 'energy_bar');
     energy_bar.scale.setTo(1, 0.5);
 
     altitude_text = game.add.text(
-            10, 
-            10,
-            'Altitude: 0', 
-            { font: '20px ' + GAME_TEXT,
-                fill: GREEN_HEX }
-            );
+                        10, 
+                        10,
+                        'Altitude: 0', 
+                        { 
+                            font: '20px ' + GAME_TEXT,
+                            fill: GREEN_HEX
+                        }
+    );
 
     energy_text = game.add.text(
             game.width - (212/2 + 20), 
             12,
             '0%', 
-            { font: '11px ' + GAME_TEXT,
-                fill: GREEN_HEX }
-            );
+            { 
+                font: '11px ' + GAME_TEXT,
+                fill: GREEN_HEX
+            }
+    );
 
     cursors = game.input.keyboard.createCursorKeys();
 }
 
 
 function add_sound_control_button() {
-    sound_off_button = game.add.sprite(game.width - 50, 40, 'sound_off_button');
-    sound_off_button.width = 25;
-    sound_off_button.height = 25;
+    function sound_off() {
+        sounds.bg_music.volume = 0;
+        sound_off_button.width = 0;
+        sound_on_button.width = SOUND_BUTTON_WIDTH;
+    }
+    function sound_on() {
+        sounds.bg_music.volume = 1;
+        sound_off_button.width = SOUND_BUTTON_WIDTH;
+        sound_on_button.width = 0;
+    }
+
+    sound_off_button = game.add.sprite(
+                        game.width - 50, 40, 'sound_off_button');
+    sound_off_button.width = SOUND_BUTTON_WIDTH;
+    sound_off_button.height = SOUND_BUTTON_WIDTH;
 	
-    sound_on_button = game.add.sprite(game.width - 50, 40, 'sound_on_button');
+    sound_on_button = game.add.sprite(
+                        game.width - 50, 40, 'sound_on_button');
     sound_on_button.width = 0;
-    sound_on_button.height = 25;
+    sound_on_button.height = SOUND_BUTTON_WIDTH;
 
     sound_off_button.inputEnabled = true;
     sound_on_button.inputEnabled = true;
@@ -361,23 +377,13 @@ function add_sound_control_button() {
 }
 
 
-function sound_off() {
-    sounds.bg_music.volume = 0;
-    sound_off_button.width = 0;
-    sound_on_button.width = 25;
-}
-
-
-function sound_on() {
-    sounds.bg_music.volume = 1;
-    sound_off_button.width = 25;
-    sound_on_button.width = 0;
-}
-
-
 /*
  * This function toggles the rate of which the spawn rate method
  * for each entity is called. The rate is based on altitude.
+ *
+ * Every 4000 altitude, the game gets 'harder', powerups and patties
+ * are spawned rarer while obstacles are spawned more frequently
+ * This # was chosen b/c 4000 altitude gets traversed every few seconds
  */
 function set_spawn_rates() {
     var entity_names = Object.keys(entity_spawn_map);
@@ -395,7 +401,8 @@ function set_spawn_rates() {
                     var params = entity.spawn_timer_params;
                     params.unshift(entity.spawn_rate);
                     entity.spawn_timer =
-                        game.time.events.loop.apply(game.time.events, params);
+                        game.time.events.loop.apply(
+                            game.time.events, params);
                 }
             }
             set_spawn_timers = true;
@@ -445,9 +452,9 @@ function fuzz_number(number) {
 
 function add_krabby_patty() {
     var patty = patties.create(
-            Math.floor(Math.random() * game.world.width),
-            0,
-            'patty');
+                    Math.floor(Math.random() * game.world.width),
+                    0,
+                    'patty');
     patty.checkWorldBounds = true; 
     patty.outOfBoundsKill = true;
     patty.scale.setTo(0.4, 0.4);
@@ -477,9 +484,10 @@ function add_grouped(entity_name) {
 
     for (var i = 0; i < n; i++) {
         var pos_neg = Math.random() <= 0.5 ? -1 : 1;
-        var x_variance = pos_neg * Math.random() * variance_mapping[entity_name];
-        var y_variance = -1 * Math.random() * variance_mapping[entity_name];
-
+        var x_variance = pos_neg * Math.random() *
+                            variance_mapping[entity_name];
+        var y_variance = -1 * Math.random() *
+                            variance_mapping[entity_name];
         spawn_mapping[entity_name](
             x_coord + x_variance, y_coord + y_variance);
     }
@@ -503,8 +511,8 @@ function add_bubble(x_coord, y_coord) {
 
 function add_jellyfish(x_coord, y_coord) {
     var jelly = jellyfishes.create(x_coord, y_coord, 'jellyfish');
-
 	var direction = (Math.random() < 0.5) ? -1 : 1;
+
     jelly.body.bounce.y = 0.7 + Math.random() * 0.2;
     jelly.checkWorldBounds = true; 
     jelly.outOfBoundsKill = true;
@@ -549,26 +557,38 @@ function add_clam() {
 
 
 function add_bubble_shield() {
-    var shield = bubble_shields.create(Math.random() * 650,
-                                       0,
-                                       'golden_bubble');
+    var shield = bubble_shields.create(
+                    Math.random() * 650, 0, 'golden_bubble');
     shield.checkWorldBounds = true;
     shield.outOfBoundsKill = true;
     shield.scale.setTo(0.43, 0.43);
 }
 
 
-function add_ink() {
-    var ink = inks.create(player.x - 300, -200, 'ink');
-
-    ink.checkWorldBounds = true;
-    ink.outOfBoundsKill = true;
-    ink.animations.add('show', [0] , 12, true);
-    ink.animations.play('show');
-}
-
-
 function add_squid() {
+    function add_ink() {
+        var ink = inks.create(player.x - 300, -200, 'ink');
+        ink.checkWorldBounds = true;
+        ink.outOfBoundsKill = true;
+        ink.animations.add('show', [0] , 12, true);
+        ink.animations.play('show');
+    }
+    function squid_left() {
+        game.time.events.remove(squid_timer);
+        squid_timer = undefined;
+    }
+    function clicked(sprite) {
+        sprite.destroy();
+        game.time.events.remove(squid_timer);
+        squid_timer = undefined;
+    }
+    function added_squid() {
+        if (squid_timer === undefined) {
+            squid_timer = game.time.events.loop(
+                Phaser.Timer.SECOND * 2.5 , add_ink, this);
+        }
+    }
+
     var squid = game.add.sprite(
                     50 + Math.floor(Math.random() * 650),
                     600,
@@ -582,30 +602,11 @@ function add_squid() {
 
     squid.checkWorldBounds = true;
     squid.outOfBoundsKill = true;
-    squid.animations.add('swim', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 12, true);
+    squid.animations.add('swim',
+                         [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+                         12,
+                         true);
     squid.animations.play('swim');
-}
-
-
-function squid_left() {
-    game.time.events.remove(squid_timer);
-    squid_timer = undefined;
-}
-
-
-function clicked(sprite) {
-    sprite.destroy();
-    game.time.events.remove(squid_timer);
-    squid_timer = undefined;
-}
-
-
-function added_squid(){
-    if (squid_timer === undefined) {
-        squid_timer = game.time.events.loop(
-                Phaser.Timer.SECOND * 2.5 , add_ink, this);
-    }
-
 }
 
 
@@ -623,11 +624,7 @@ function update_physics() {
     shield.x = player.x;
     shield.y = player.y;
 
-    if (in_shield) {
-        shield.exists = true;
-    } else {
-        shield.exists = false;
-    }
+    shield.exists = in_shield;
 	
     platforms.forEach(function(item) {
         item.body.velocity.y = speed;
@@ -748,45 +745,35 @@ function update_physics() {
 }
 
 
-/*
- * IMPORTANT: Because the update function's contents vary in
- * functionality and depend on each other, the separate functions
- * must be divided in sequences.
- *
- * 1. Check for all collisions
- * 2. Insert or delete entities
- * 3. Update physics
- * 4. Update user inputs
- * 5. Update text & counters
- */
 function update() {
+
     // ==========================
     // ==== Check collisions ====
     // ==========================
 
-	game.physics.arcade.collide(clams, platforms);
+    game.physics.arcade.collide(clams, platforms);
     game.physics.arcade.collide(jellyfishes, platforms);
     game.physics.arcade.collide(patties, platforms);
     game.physics.arcade.collide(
         player,
-		patties,
-		collect_patty,
-		null,
-		this
+        patties,
+        hit_patty,
+        null,
+        this
     );
     game.physics.arcade.overlap(
         player,
-		jellyfishes,
-		hit_jellyfish,
-		null,
-		this
+        jellyfishes,
+        hit_jellyfish,
+        null,
+        this
     );
-	game.physics.arcade.overlap(
+    game.physics.arcade.overlap(
         player,
-		clams,
-		hit_clam,
-		null,
-		this
+        clams,
+        hit_clam,
+        null,
+        this
     );
     game.physics.arcade.overlap(
         player,
@@ -795,21 +782,21 @@ function update() {
         null,
         this
     );
-	game.physics.arcade.overlap(
+    game.physics.arcade.overlap(
         player,
-		bubble_shields,
-		hit_shield,
-		null,
-		this
+        bubble_shields,
+        hit_shield,
+        null,
+        this
     );
 		
     set_spawn_rates();
 
     update_physics();
 
-    // ====================
-    // ==== Controller ====
-    // ====================
+    // ===========================
+    // ==== Avatar controller ====
+    // ===========================
 
     var walking = altitude === 0;
     var falling = (speed <= 0 && altitude > 0);
@@ -841,7 +828,6 @@ function update() {
             player.scale.x *= -1;
         }
     } else if (walking) {
-        // stand still, no horiz movement, but only if walking!
         player.animations.stop();
         player.frame = 14;
     }
@@ -860,7 +846,7 @@ function update() {
 }
 
 
-function collect_patty(player, patty) {
+function hit_patty(player, patty) {
     patty.kill();
 
     aura.reset(player.x, player.y);
@@ -952,7 +938,7 @@ function game_over() {
     bubbles = game.add.group();
     bubbles.enableBody = true;
 
-    final_altitude = altitude.toString();
+    final_altitude = numberWithCommas(altitude.toString());
 
     add_end_text('Game Over!',
                  game.width / 2 - 110,
@@ -960,7 +946,7 @@ function game_over() {
                  '40px');
 
     add_end_text('Final score: ' + final_altitude,
-                 game.width / 2 - 70,
+                 game.width / 2 - 80,
                  game.height/2 + 170,
                  '18px');
 
@@ -987,7 +973,8 @@ function game_over() {
     var bubble_dat = entity_spawn_map['bubble'];
     var bubble_spawn_params = bubble_dat.spawn_timer_params;
     var post_game_bubble_timer = game.time.events.loop.apply(
-        game.time.events, bubble_spawn_params);
+                                    game.time.events, bubble_spawn_params);
+
     post_game_bubble_timer.delay = Phaser.Timer.SECOND * 0.75;
 
     var body = $('body');
