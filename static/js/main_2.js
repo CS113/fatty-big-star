@@ -938,14 +938,14 @@ function game_over() {
     bubbles = game.add.group();
     bubbles.enableBody = true;
 
-    final_altitude = numberWithCommas(altitude.toString());
+    final_altitude = altitude.toString();
 
     add_end_text('Game Over!',
                  game.width / 2 - 110,
                  game.height/2 - 170,
                  '40px');
 
-    add_end_text('Final score: ' + final_altitude,
+    add_end_text('Final score: ' + numberWithCommas(final_altitude),
                  game.width / 2 - 80,
                  game.height/2 + 170,
                  '18px');
