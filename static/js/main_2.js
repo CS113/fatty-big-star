@@ -711,14 +711,14 @@ function update_physics() {
     squids.forEach(function(item) {
         // Fix squid physics effect. Squids are unique because they 
         // are naturally floating upwards, not downwards.
-    
+
         // If our speed is negative (falling) the squid should quickly
         // zoom up, not the before action (fall down slowly)
-        var speed_coeff = -1;
-        if (speed > 0) {
-            speed_coeff = -0.1;
+        var speed_coeff = -0.1;
+        if (speed < 0) {
+            speed_coeff = 1;
         }
-        item.body.velocity.y = speed_coeff  * speed;
+        item.body.velocity.y = speed_coeff * speed;
     }, this);
 
     // Game over when Patrick has been falling for a little bit
