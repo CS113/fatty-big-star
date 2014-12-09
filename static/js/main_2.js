@@ -115,9 +115,11 @@ function preload() {
     game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
     game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
 
-    game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
-    game.load.audio('patrick_hurt', ['static/sounds/patrick_hurt.mp3']);
-    game.load.audio('bubble_pop', ['static/sounds/bubble_pop.wav']);
+    game.load.audio('hurt', ['static/sounds/hurt.mp3']);
+    game.load.audio('pop', ['static/sounds/pop.mp3']);
+    game.load.audio('enhance', ['static/sounds/enhance.mp3']);
+    game.load.audio('splat', ['static/sounds/splat.mp3']);
+    game.load.audio('intro_gong', ['static/sounds/intro_gong.mp3']);
 }
 
 
@@ -177,12 +179,13 @@ var _____,
  */
 function create() {
     sounds = {
-        bg_music: game.add.audio('background_music'),
-        hurt: game.add.audio('patrick_hurt'),
-        bubble_pop: game.add.audio('bubble_pop'),
+        hurt: game.add.audio('hurt'),
+        pop: game.add.audio('pop'),
+        enhance: game.add.audio('enhance'),
+        splat: game.add.audio('splat'),
+        intro: game.add.audio('intro_gong'),
     };
-
-    // sounds.bg_music.play(); TODO: play on repeat
+    sounds.intro.play();
 
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
@@ -349,12 +352,13 @@ function create() {
 
 function add_sound_control_button() {
     function sound_off() {
-        sounds.bg_music.volume = 0;
+        // TODO: turn ALL sounds off in the dict
+        // sounds.bg_music.volume = 0;
         sound_off_button.width = 0;
         sound_on_button.width = SOUND_BUTTON_WIDTH;
     }
     function sound_on() {
-        sounds.bg_music.volume = 1;
+        // sounds.bg_music.volume = 1;
         sound_off_button.width = SOUND_BUTTON_WIDTH;
         sound_on_button.width = 0;
     }
@@ -567,6 +571,7 @@ function add_bubble_shield() {
 
 function add_squid() {
     function add_ink() {
+        sounds.splat.play();
         var ink = inks.create(player.x - 300, -200, 'ink');
         ink.checkWorldBounds = true;
         ink.outOfBoundsKill = true;
@@ -847,6 +852,7 @@ function update() {
 
 
 function hit_patty(player, patty) {
+    sounds.enhance.play();
     patty.kill();
 
     aura.reset(player.x, player.y);
@@ -860,6 +866,7 @@ function hit_patty(player, patty) {
 
 
 function hit_jellyfish(player, jellyfish) {
+    sounds.hurt.play();
     jellyfish.kill();
 	if (!in_shield) {
         energy = 0;
@@ -874,7 +881,7 @@ function hit_clam(player, clam) {
         energy = Math.max(energy - 50, 0);
         sounds.hurt.play();
     } else {
-        sounds.bubble_pop.play();
+        sounds.pop.play();
     }
     in_shield = false;    
 }	
@@ -888,6 +895,7 @@ function hit_shield(player, bubble) {
 
 
 function hit_shark(player, shark) {
+    sounds.hurt.play();
 	shark.kill();
     if (!game_ended && !in_shield) {
         game_over();
