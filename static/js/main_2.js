@@ -1,15 +1,19 @@
 // Static settings variables
-var DEBUG = true,  // toggle this variable
+var DEBUG = true,
     GAME_WIDTH = 800,
     GAME_HEIGHT = 600,
     GROUND_HEIGHT = 128,
     PATRICK_VELOCITY_X = 300,
+    PATRICK_VELOCITY_Y_PATTY = 400,
+    PATRICK_VELOCITY_Y_GRAVITY_LOSS = 30,
     PATTY_SPEED_BOOST = 350,
     ENERGY_CAP = 500,
     ALTITUDE_CHUNK = 4000,
+    ALTITUDE_SPEED_INCREASE_RATE = 1 / 60,
+    SPEED_GAME_LOSS_THRESHHOLD = -1000,
     GAME_TEXT = 'Lucida Grande',
     BLACK_HEX = '#000',
-    GREEN_HEX = '#83F52C',
+    GREEN_HEX = '#5DFC0A',
     COOKIE_USERNAME_KEY = 'fatty_big_star_username',
     COOKIE_EXPIRATION_DAYS = 7;
 
@@ -18,10 +22,12 @@ var game = new Phaser.Game(
         GAME_HEIGHT,
         Phaser.AUTO,
         'game_box',
-        { preload: preload,
+        {
+            preload: preload,
             create: create,
-    update: update }
-    );
+            update: update
+        }
+);
 
 var DIPLOMACY = {
     OBSTACLE: 0,
@@ -29,72 +35,84 @@ var DIPLOMACY = {
     NEUTRAL: 2
 };
 
-var ENTITY_VALUE_MAP = {
+var entity_spawn_map = {
+    'bubble': {
+        // all rates are in seconds
+        spawn_rate: Phaser.Timer.SECOND * 0.1,
+        spawn_timer: null,
+        spawn_timer_params: [add_grouped, this, 'bubble'],
+        diplomacy: DIPLOMACY.NEUTRAL
+    },
     'patty': {
-        // starting coeffs, dynamically modified as game progresses
-        // powerups start at a high frequency and decrease
-        SPAWN_RATE: 15,  
-        // for powerups, there's a min frequency (it's dropping)
-        RATE_CAP: 65,
+        spawn_rate: Phaser.Timer.SECOND * 0.25,
+        spawn_timer: null,
+        spawn_timer_params: [add_krabby_patty, this],
+        RATE_CAP: Phaser.Timer.SECOND * 2,
         DIPLOMACY: DIPLOMACY.POWERUP
     },
     'jellyfish': {
-        // obstacles start at a low frequency and increase
-        SPAWN_RATE: 150,
-        // for obstacles, there's a max frequency (it's rising)
-        RATE_CAP: 25,
-        DIPLOMACY: DIPLOMACY.OBSTACLE
+        spawn_rate: Phaser.Timer.SECOND * 3,
+        spawn_timer: null,
+        spawn_timer_params: [add_grouped, this, 'jellyfish'],
+        RATE_CAP: Phaser.Timer.SECOND * 2,
+        diplomacy: DIPLOMACY.OBSTACLE
     },
     'shark': {
-        SPAWN_RATE: 200,
-        RATE_CAP: 75,
-        DIPLOMACY: DIPLOMACY.OBSTACLE
-
+        spawn_rate: Phaser.Timer.SECOND * 3.5,
+        spawn_timer: null,
+        spawn_timer_params: [add_shark, this],
+        RATE_CAP: Phaser.Timer.SECOND * 2,
+        diplomacy: DIPLOMACY.OBSTACLE
+    },
+    'clam': {
+        spawn_rate: Phaser.Timer.SECOND * 2,
+        spawn_timer: null,
+        spawn_timer_params: [add_clam, this],
+        RATE_CAP: Phaser.Timer.SECOND * 2,
+        diplomacy: DIPLOMACY.OBSTACLE
     },
     'squid': {
-        SPAWN_RATE: 5400,
-        RATE_CAP: 1000,
-        DIPLOMACY: DIPLOMACY.OBSTACLE
-    },
-    'bubble': {
-        SPAWN_RATE: 30,
-        DIPLOMACY: DIPLOMACY.NEUTRAL
+        spawn_rate: Phaser.Timer.SECOND * 13,
+        spawn_timer: null,
+        spawn_timer_params: [add_squid, this],
+        RATE_CAP: Phaser.Timer.SECOND * 7,
+        diplomacy: DIPLOMACY.OBSTACLE
     },
     'shield': {
-        SPAWN_RATE: 900,
-        RATE_CAP:  1400,
-        DIPLOMACY: DIPLOMACY.POWERUP
+        spawn_rate: Phaser.Timer.SECOND * 5,
+        spawn_timer: null,
+        spawn_timer_params: [add_bubble_shield, this],
+        RATE_CAP: Phaser.Timer.SECOND * 15,
+        diplomacy: DIPLOMACY.POWERUP
     }
 };
 
 
-// Load static assets
 function preload() {
     game.load.image('ocean', 'static/imgs/undersea.jpg');
     game.load.image('black_bg', 'static/imgs/game_over.png');
     game.load.image('ground', 'static/imgs/platform.png');
-    game.load.image('patty', 'static/imgs/patty.png');
-    game.load.image('bubble', 'static/imgs/bubble.png');
-    game.load.image('energy_bar', 'static/imgs/energy_bar.png');
-    game.load.image('empty_energy_bar', 'static/imgs/empty_energy_bar.png');
-	game.load.image('clam', 'static/imgs/clam.png');
-    game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
-    game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
-    game.load.image('golden_bubble', 'static/imgs/golden_bubble.png');
-
-
     game.load.image('coral_ledge', 'static/imgs/coral_ledge.png');
-    game.load.spritesheet('coral', 'static/imgs/coral_sprite.png', 300, 208);
     game.load.image('coral_side', 'static/imgs/coral_side.png');
+    game.load.spritesheet('coral', 'static/imgs/coral_sprite.png', 300, 208);
     game.load.spritesheet('seaweed', 'static/imgs/seaweed_sprite.png', 48, 60);
 
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 46, 54);
-    game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
-
-    game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
+    game.load.image('patty', 'static/imgs/patty.png');
+    game.load.image('bubble', 'static/imgs/bubble.png');
+	game.load.image('clam', 'static/imgs/clam.png');
     game.load.spritesheet('shark', 'static/imgs/sharks.png', 103,45);
     game.load.spritesheet('squid', 'static/imgs/squidsheet.png', 49, 121);
     game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
+    game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
+
+    game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
+    game.load.image('golden_bubble', 'static/imgs/golden_bubble.png');
+    game.load.image('energy_bar', 'static/imgs/energy_bar.png');
+    game.load.image('empty_energy_bar', 'static/imgs/empty_energy_bar.png');
+
+    game.load.image('sound_off_button', 'static/imgs/turn_off_sound.png');
+    game.load.image('sound_on_button', 'static/imgs/turn_on_sound.png');
 
     game.load.audio('background_music', ['static/sounds/485299_Underwater-Grotto-T.mp3']);
     game.load.audio('patrick_hurt', ['static/sounds/patrick_hurt.mp3']);
@@ -110,6 +128,7 @@ var _____,
     altitude = 0,
     energy = 0,
     patty_boost_timer = 0,
+
     // Every 4000 altitude, the game gets 'harder', powerups and patties
     // are spawned rarer while obstacles are spawned more frequently
     // This # was chosen b/c 4000 altitude gets traversed every few seconds
@@ -139,24 +158,25 @@ var _____,
     energy_text,
     press_space_blink_text,
 
-    //Timer,
+    // Timer,
     squid_timer,
 
     // Music
     sounds,
 
-    //Flags
+    // Flags
     facing_right = true,
     game_ended = false,
+    set_spawn_timers = false,
     in_shield = false;
 
 
 /*
- * NOTE: Entities are rendered in the order in which their
- * sprites and groups are declared. e.g. `inks` is intentionally
+ * NOTE: Sprites are rendered in the order in which their
+ * objects or groups are declared, e.g., `inks` is intentionally
  * at the very end because we want the ink to be displayed over
- * other other entities.
- *
+ * other other entities. Redeclaring an object or group will
+ * effectively bring that sprite back to the top.
  */
 function create() {
     sounds = {
@@ -164,37 +184,30 @@ function create() {
         hurt: game.add.audio('patrick_hurt'),
         bubble_pop: game.add.audio('bubble_pop'),
     };
-    //sounds.bg_music.play();
 
-    // Enable physics for in-game entities
+    // sounds.bg_music.play(); TODO: play on repeat
+
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
-    // Add ocean background
     game.add.sprite(0, 0, 'ocean');
 
     platforms = game.add.group();
-    // Enable physics for any object created in this group
-    // Note that the sky has no physics enabled
     platforms.enableBody = true;
-    // The first platform is just the ground
     var ground = platforms.create(
-            0,
-            game.world.height - GROUND_HEIGHT,
-            'ground');
+                        0,
+                        game.world.height - GROUND_HEIGHT,
+                        'ground');
 
-    // Scale it to fit the width of the game
-    // (the original sprite is 400x32 in size)
+    // Scale ground to fit the width of the game
     ground.scale.setTo(2, 4);
 
-    // `body.immovable` set prevents movement after two
-    // this object collides with another
+    // `body.immovable` set prevents movement after collisions
     ground.body.immovable = true;
 
-    // Add the main avatar, Patrick!
     player = game.add.sprite(
-            game.world.width / 2,
-            game.world.height - 150,
-            'patrick');
+                game.world.width / 2,
+                game.world.height - 150,
+                'patrick');
     game.physics.arcade.enable(player);
     player.body.immovable = true;
     player.body.collideWorldBounds = true;
@@ -259,9 +272,7 @@ function create() {
     bubble_shields = game.add.group();
     bubble_shields.enableBody = true;
 
-    // ==========================================
-    // ======= Initial background scenery =======
-    // ==========================================
+    // ===== Initial background scenery =====
     var scenery_y_base = game.world.height - GROUND_HEIGHT - 170;
 
     var coral_ledge = platforms.create(0, scenery_y_base, 'coral_ledge');
@@ -294,7 +305,7 @@ function create() {
     coral_3.scale.setTo(0.3, 0.3);
     coral_3.play('flapping');
 
-    // Initial patty on ground to give Patrick a boost
+    // initial patty on ground to give Patrick a boost
     var first_patty = patties.create(
             0.5 * game.world.width - 20,
             10, 
@@ -302,6 +313,7 @@ function create() {
     first_patty.scale.setTo(0.4, 0.4);
     first_patty.body.gravity.y = 600;
 	
+    // ===== Buttons & controls seperate from game world =====
     add_sound_control_button();
 	
     empty_energy_bar = game.add.sprite(game.width - (216 + 10), 10,
@@ -317,7 +329,7 @@ function create() {
             10,
             'Altitude: 0', 
             { font: '20px ' + GAME_TEXT,
-                fill: '#5DFC0A' }
+                fill: GREEN_HEX }
             );
 
     energy_text = game.add.text(
@@ -328,9 +340,7 @@ function create() {
                 fill: GREEN_HEX }
             );
 
-    // Controls
     cursors = game.input.keyboard.createCursorKeys();
-	
 }
 
 
@@ -350,11 +360,13 @@ function add_sound_control_button() {
     sound_on_button.events.onInputDown.add(sound_on, this);
 }
 
+
 function sound_off() {
     sounds.bg_music.volume = 0;
     sound_off_button.width = 0;
     sound_on_button.width = 25;
 }
+
 
 function sound_on() {
     sounds.bg_music.volume = 1;
@@ -362,31 +374,56 @@ function sound_on() {
     sound_on_button.width = 0;
 }
 
+
 /*
- * This function uses the current altitude and entity name
- * to generate a frequency of spawn for said entity. This coeff
- * is then used to modulus against the game timer, a larger
- * coeff maens rarer spawn times.
+ * This function toggles the rate of which the spawn rate method
+ * for each entity is called. The rate is based on altitude.
  */
-function set_spawn_rate(entity_name) {
-    if (altitude <= altitude_checkmark) {
+function set_spawn_rates() {
+    var entity_names = Object.keys(entity_spawn_map);
+
+    if (altitude < altitude_checkmark) {
+        if (set_spawn_timers) {
+            return;
+        }
+        // init the spawn timer only after patrick begins going up
+        if (altitude > 0) {
+            // set spawn timers after altitude passes 0
+            for (var i = 0; i < entity_names.length; i++) {
+                var entity = entity_spawn_map[entity_names[i]];
+                if (entity.spawn_timer === null) {
+                    var params = entity.spawn_timer_params;
+                    params.unshift(entity.spawn_rate);
+                    entity.spawn_timer =
+                        game.time.events.loop.apply(game.time.events, params);
+                }
+            }
+            set_spawn_timers = true;
+        }
         return;
     }
+
     altitude_checkmark += ALTITUDE_CHUNK;
-    var rate_delta = 1;
 
-    var entity = ENTITY_VALUE_MAP[entity_name];
-
-    if (entity.DIPLOMACY === DIPLOMACY.OBSTACLE) {
-        // obstacles get more frequent
-        entity.SPAWN_RATE = Math.max(
-            entity.SPAWN_RATE - rate_delta, entity.RATE_CAP);
-    } else if (entity.DIPLOMACY === DIPLOMACY.POWERUP) {
-        // powerups start at a high rate and lose frequency
-        entity.SPAWN_RATE = Math.min(
-            entity.SPAWN_RATE + rate_delta, entity.RATE_CAP);
-    } else if (entity.DIPLOMACY === DIPLOMACY.NEUTRAL) {
-        // do nothing
+    for (var i = 0; i < entity_names.length; i++) {
+        var entity = entity_spawn_map[entity_names[i]];
+        // update the spawn rate based on altitude
+        var rate_delta = Phaser.Timer.SECOND * 0.25;
+        if (entity.diplomacy === DIPLOMACY.OBSTACLE) {
+            // obstacles get more frequent
+            entity.spawn_rate = Math.max(
+                entity.spawn_rate - rate_delta, entity.RATE_CAP);
+            entity.spawn_timer.delay = entity.spawn_rate;
+        }
+        else if (entity.diplomacy === DIPLOMACY.POWERUP) {
+            // powerups start at a high rate and lose frequency
+            entity.spawn_rate = Math.min(
+                entity.spawn_rate + rate_delta, entity.RATE_CAP);
+            entity.spawn_timer.delay = entity.spawn_rate;
+        }
+        else if (entity.diplomacy === DIPLOMACY.NEUTRAL) {
+            // do nothing
+        }
     }
 }
 
@@ -424,7 +461,7 @@ function add_krabby_patty() {
 function add_grouped(entity_name) {
     var variance_mapping = {
         'bubble': 100,
-        'jellyfish': 250
+        'jellyfish': 50
     };
     var spawn_mapping = {
         'bubble': add_bubble,
@@ -432,9 +469,8 @@ function add_grouped(entity_name) {
     }
     var max_mapping = {
         'bubble': 50,
-        'jellyfish': 20
+        'jellyfish': 30
     }
-
     var x_coord = Math.floor(Math.random() * game.world.width);
     var y_coord = 0;
     var n = Math.floor(4 + (Math.random() * max_mapping[entity_name]));
@@ -456,12 +492,11 @@ function add_bubble(x_coord, y_coord) {
     bubble.body.bounce.y = 0.9 + Math.random() * 0.2;
     bubble.checkWorldBounds = true; 
     bubble.outOfBoundsKill = true;
-    // rotate the bubble for a cool effect
-
     // bubbles should vary in size, but should be on the smaller
     // end because we have shitty sprites
     var size_variance = 0.1 + (Math.random() * 0.5);
     bubble.scale.setTo(size_variance, size_variance);
+    // rotate the bubble for a cool effect
     bubble.angle = Math.floor(181 * Math.random());
 }
 
@@ -476,10 +511,9 @@ function add_jellyfish(x_coord, y_coord) {
     jelly.animations.add('swim', [0, 1, 2, 3], 12, true);
     jelly.animations.play('swim');
     jelly.oscl_coef = (Math.random() * (100) + 200) * direction;
-	if(direction > 0) {
+	if (direction > 0) {
 		jelly.x_speed = (jelly.oscl_coef - 100);
-	}	
-	else {
+	} else {
 		jelly.x_speed = (jelly.oscl_coef + 100);
 	}	
     // Start each jellyfish at a random animation to look more real
@@ -515,7 +549,9 @@ function add_clam() {
 
 
 function add_bubble_shield() {
-    var shield = bubble_shields.create(Math.random() * 650, 0, 'golden_bubble');
+    var shield = bubble_shields.create(Math.random() * 650,
+                                       0,
+                                       'golden_bubble');
     shield.checkWorldBounds = true;
     shield.outOfBoundsKill = true;
     shield.scale.setTo(0.43, 0.43);
@@ -532,19 +568,22 @@ function add_ink() {
 }
 
 
-function add_squid(x_coord, y_coord) {
-    var squid = game.add.sprite(x_coord, y_coord, 'squid');
+function add_squid() {
+    var squid = game.add.sprite(
+                    50 + Math.floor(Math.random() * 650),
+                    600,
+                    'squid');
     squid.inputEnabled = true;
-
     squid.events.onInputDown.add(clicked, this);
     squid.events.onAddedToGroup.add(added_squid, this);
     squid.events.onOutOfBounds.add(squid_left, this);
+
     squids.add(squid);
+
     squid.checkWorldBounds = true;
     squid.outOfBoundsKill = true;
     squid.animations.add('swim', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], 12, true);
     squid.animations.play('swim');
-
 }
 
 
@@ -578,7 +617,6 @@ function numberWithCommas(n) {
 
 
 function update_physics() {
-    // Update aura positions to patrick, this should be done elsewhere!
     aura.x = player.x;
     aura.y = player.y;
 
@@ -598,11 +636,16 @@ function update_physics() {
 
     jellyfishes.forEach(function(item) {
         item.body.velocity.x = item.x_speed;
-        item.body.velocity.y = item.oscl_coef * Math.sin(game.time.now / 100) + speed;
+        item.body.velocity.y = item.oscl_coef *
+                                Math.sin(game.time.now / 100) + speed;
     }, this);
 
     bubbles.forEach(function(item) {
-        item.body.velocity.y = speed;
+        if (game_ended) {
+            item.body.velocity.y = 120;
+        } else {
+            item.body.velocity.y = speed;
+        }
         item.body.acceleration.y = acceleration;
         item.angle = item.angle + ((Math.random() <= 0.5) ? 1 : -1);
     }, this);
@@ -635,9 +678,8 @@ function update_physics() {
     clams.forEach(function(item) {
         item.body.velocity.y = speed * 2;
         item.body.acceleration.y = acceleration;
-        // item.body.gravity.y = 300;
         if (speed < 0 || acceleration < 0) {
-            item.body.velocity.y = 400;
+            item.body.velocity.y = PATRICK_VELOCITY_Y_PATTY;
             item.body.acceleration.y = 200;
             item.body.gravity.y = 150;
         }
@@ -658,7 +700,7 @@ function update_physics() {
         item.body.acceleration.y = acceleration;
         item.body.gravity.y = 150;
         if (speed < 0 || acceleration < 0) {
-            item.body.velocity.y = 400;
+            item.body.velocity.y = PATRICK_VELOCITY_Y_PATTY;
             item.body.acceleration.y = 200;
             item.body.gravity.y = 150;
         }
@@ -680,24 +722,25 @@ function update_physics() {
     // Game over when Patrick has been falling for a little bit
     // Safe assumption because all entities are killed after
     // they fall off the map, Patrick has no way of getting up
-    if ((speed < -1000 || altitude < 0) && !game_ended) {
+    if ((speed < SPEED_GAME_LOSS_THRESHHOLD || altitude < 0) && !game_ended) {
         game_over();
     }
 
     // Exhaust effect of patties so they don't last forever
     if (energy > 0) {
-        speed = 400;
+        speed = PATRICK_VELOCITY_Y_PATTY;
         if (patty_boost_timer > 0) {
             speed = speed + PATTY_SPEED_BOOST;
             patty_boost_timer--;
         }
         energy--;
-    } else if (altitude > 0) {
-        speed -= 30;
+    }
+    else if (altitude > 0) {
+        speed -= PATRICK_VELOCITY_Y_GRAVITY_LOSS;
     }
 
     if (speed > 0) {
-        altitude += Math.floor(speed * (1/60));
+        altitude += Math.floor(speed * ALTITUDE_SPEED_INCREASE_RATE);
     }
 
     // Reset the player's horiz velocity (movement)
@@ -710,110 +753,57 @@ function update_physics() {
  * functionality and depend on each other, the separate functions
  * must be divided in sequences.
  *
- * 1. Endgame state check
- * 2. Check for all collisions
- * 3. Insert or delete entities
- * 4. Update physics
- * 5. Update user inputs
- * 7. Update text & counters
+ * 1. Check for all collisions
+ * 2. Insert or delete entities
+ * 3. Update physics
+ * 4. Update user inputs
+ * 5. Update text & counters
  */
 function update() {
-    // ==============================
-    // ==== Endgame state check =====
-    // ==============================
-    if (game_ended) {
-        var bubble_rate = fuzz_number(ENTITY_VALUE_MAP['bubble'].SPAWN_RATE);
-        if (game.time.time % bubble_rate === 0) {
-            add_grouped('bubble');
-        }
-        bubbles.forEach(function(item) {
-            item.body.velocity.y = 120;
-            item.angle = item.angle + ((Math.random() <= 0.5) ? 1 : -1);
-        }, this);
-        return;
-    }
+    // ==========================
+    // ==== Check collisions ====
+    // ==========================
 
-    // ==============================
-    // ==== Check for collisions ====
-    // ==============================
 	game.physics.arcade.collide(clams, platforms);
     game.physics.arcade.collide(jellyfishes, platforms);
     game.physics.arcade.collide(patties, platforms);
-    game.physics.arcade.collide(player,
+    game.physics.arcade.collide(
+        player,
 		patties,
 		collect_patty,
 		null,
-		this);
-    game.physics.arcade.overlap(player,
+		this
+    );
+    game.physics.arcade.overlap(
+        player,
 		jellyfishes,
 		hit_jellyfish,
 		null,
-		this);
-	game.physics.arcade.overlap(player,
+		this
+    );
+	game.physics.arcade.overlap(
+        player,
 		clams,
 		hit_clam,
 		null,
-		this);
-    game.physics.arcade.overlap(player,
+		this
+    );
+    game.physics.arcade.overlap(
+        player,
         sharks,
         hit_shark,
         null,
-        this);
-	game.physics.arcade.overlap(player,
+        this
+    );
+	game.physics.arcade.overlap(
+        player,
 		bubble_shields,
 		hit_shield,
 		null,
-		this);
+		this
+    );
 		
-		
-    // ===============================
-    // ==== Add & delete entities ====
-    // ===============================
-
-    if (game.time.time % 4 === 0) {
-        var entities = Object.keys(ENTITY_VALUE_MAP);
-        for (var i = 0; i < entities.length; i++) {
-            set_spawn_rate(entities[i]);
-        }
-    }
-
-    var jelly_rate = fuzz_number(ENTITY_VALUE_MAP['jellyfish'].SPAWN_RATE);
-    if (game.time.time % jelly_rate === 0 && altitude > 0) {
-        add_grouped('jellyfish');
-    }
-
-    var patty_rate = fuzz_number(ENTITY_VALUE_MAP['patty'].SPAWN_RATE);
-    if (game.time.time % patty_rate === 0 && altitude > 0) {
-        add_krabby_patty();
-    }
-
-    var shark_rate = fuzz_number(ENTITY_VALUE_MAP['shark'].SPAWN_RATE);
-    if (game.time.time % shark_rate === 0 && altitude > 0) {
-        add_shark();
-        add_clam();
-    }
-
-	var shield_rate = fuzz_number(ENTITY_VALUE_MAP['shield'].SPAWN_RATE);
-	if (game.time.time % shield_rate === 0 && altitude > 0) {
-		add_bubble_shield();
-    }
-
-    var squid_rate = fuzz_number(ENTITY_VALUE_MAP['squid'].SPAWN_RATE);
-    if (altitude % squid_rate === 0  && altitude > 999) {
-        add_squid(50 + Math.floor(Math.random() * 650), 600);
-    }
-
-    var bubble_rate = fuzz_number(ENTITY_VALUE_MAP['bubble'].SPAWN_RATE);
-    // bubbles are background objects, no dynamic changing spawn rate
-    // (10 + Math.floor(Math.random() * 65))
-    if (game.time.time % bubble_rate === 0 && altitude > 0) {
-        add_grouped('bubble');
-    }
-
-
-    // ==================
-    // ===== Physics ====
-    // ==================
+    set_spawn_rates();
 
     update_physics();
 
@@ -827,11 +817,14 @@ function update() {
 
     if (swimming) {
         player.animations.play('swimming');
-    } else if (walking) {
+    }
+    else if (walking) {
         player.animations.play('walking');
-    } else if (falling) {
+    }
+    else if (falling) {
         player.animations.play('falling');
-    } else {
+    }
+    else {
         player.animations.stop();
     }
 
@@ -856,15 +849,16 @@ function update() {
     // ===========================
     // ==== Text and counters ====
     // ===========================
+
     altitude_as_string = numberWithCommas(altitude);
     altitude_text.text = 'Altitude: ' + altitude_as_string;
 
     var energy_percent = Math.floor(
             (energy / ENERGY_CAP) * 100).toString() + "%";
     energy_text.text = energy_percent;
-
     energy_bar.width = (energy / ENERGY_CAP) * 212;
 }
+
 
 function collect_patty(player, patty) {
     patty.kill();
@@ -909,9 +903,9 @@ function hit_shield(player, bubble) {
 
 function hit_shark(player, shark) {
 	shark.kill();
-	
-    if (!game_ended && !in_shield)
+    if (!game_ended && !in_shield) {
         game_over();
+    }
 	in_shield = false;
 }
 
@@ -927,7 +921,7 @@ function send_highscores() {
     var post_to = '/api/highscore_send';
     
     if (!username || 0 === username.length) {
-        // TODO: Remind user on screen to enter a username
+        alert('Enter a valid username!');
         return;
     }
 
@@ -974,10 +968,27 @@ function game_over() {
                                           game.width / 2 - 65,
                                           game.height - 70,
                                           '18px');
+
     game.time.events.loop(Phaser.Timer.SECOND * 0.6,
                           function(text) {
                               text.visible = !text.visible;
                           }, this, press_space_blink_text);
+
+    // remove the spawn timer after the game ends
+    var entity_names = Object.keys(entity_spawn_map); 
+    for (var i = 0; i < entity_names.length; i++) {
+        var entity = entity_spawn_map[entity_names[i]];
+        if (entity.spawn_timer) {
+            game.time.events.remove(entity.spawn_timer);
+        }
+    }
+
+    // add a spawn timer for bubbles, for garnishing the exit screen
+    var bubble_dat = entity_spawn_map['bubble'];
+    var bubble_spawn_params = bubble_dat.spawn_timer_params;
+    var post_game_bubble_timer = game.time.events.loop.apply(
+        game.time.events, bubble_spawn_params);
+    post_game_bubble_timer.delay = Phaser.Timer.SECOND * 0.75;
 
     var body = $('body');
     body.append(
