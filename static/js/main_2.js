@@ -46,9 +46,9 @@ var entity_spawn_map = {
         diplomacy: DIPLOMACY.NEUTRAL
     },
     'patty': {
-        spawn_rate: Phaser.Timer.SECOND * 0.25,
+        spawn_rate: Phaser.Timer.SECOND * 0.5,
         spawn_timer: null,
-        spawn_timer_params: [add_krabby_patty, this],
+        spawn_timer_params: [add_patty_group, this],
         RATE_CAP: Phaser.Timer.SECOND * 2,
         DIPLOMACY: DIPLOMACY.POWERUP
     },
@@ -480,7 +480,7 @@ function fuzz_number(number) {
     return Math.ceil(number + rand_coeff);
 }
 
-
+/*
 function add_krabby_patty() {
     var patty = patties.create(
                     Math.floor(Math.random() * game.world.width),
@@ -489,8 +489,63 @@ function add_krabby_patty() {
     patty.checkWorldBounds = true; 
     patty.outOfBoundsKill = true;
     patty.scale.setTo(0.4, 0.4);
+}*/
+
+function add_varied_patties(n) {
+	var variance = 100;
+	var x_start = Math.floor(Math.random() * (game.world.width - variance));
+	var y = Math.floor(Math.random() * 100);
+	for(var i  = 0; i < n; ++i) {
+		var x = Math.floor(x_start + variance * (2 * Math.random() - 1));
+		var patty = patties.create(x, y, 'patty');
+		patty.checkWorldBounds = true;
+		patty.outOfBoundsKill = true;
+		patty.scale.setTo(0.4, 0.4);
+		y += patty.height + Math.floor(Math.random() * 2 * variance);
+	}
 }
 
+function add_sin_patties(n) {
+	var a = 100 + Math.floor(100 * Math.random());
+	var x_start = Math.floor(Math.random() * (game.world.width - a));
+	var x = x_start;
+	var y = Math.floor(Math.random() * 100);
+	for(var i = 0; i < n; ++i) {
+		var patty = patties.create(x, y, 'patty');
+		patty.checkWorldBounds = true;
+		patty.outOfBoundsKill = true;
+		patty.scale.setTo(0.4, 0.4);
+		x = x_start + Math.sin(2 * Math.PI * i / n);
+		y += Math.floor(Math.random() * 200) + patty.height;
+	}
+}
+
+function add_step_patties(n) {
+	var step = 100 + Math.floor(100 * Math.random());
+	var x_start = Math.floor(Math.random() * game.world.width);
+	var y_start = Math.floor(100 * Math.random());
+	for(var i = 0; i < n; ++i) {
+		var patty = patties.create(x_start + step * i, y_start + step * i, 'patty');
+		patty.checkWorldBounds = true;
+		patty.outOfBoundsKill = true;
+		patty.scale.setTo(0.4, 0.4);
+	}
+}
+
+var patterns = [add_varied_patties, add_sin_patties, add_step_patties];
+
+function add_patty_group() {
+	//add patties in a "line group"
+	//group should have a random center/start
+	//each one moves up and to the left or right a little from the "center"
+	//random number of patties generated in this patterns
+	var range_patties = 7;
+	var offset = 3;
+
+	var num_patties = offset + Math.floor(Math.random() * range_patties);
+	var pat = Math.floor(Math.random() * patterns.length);
+	patterns[pat](num_patties);
+}
 
 /*
  * Some entities are different, we want to add them in groups
