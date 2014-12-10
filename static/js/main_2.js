@@ -56,10 +56,10 @@ var entity_spawn_map = {
         diplomacy: DIPLOMACY.POWERUP
     },
     'jellyfish': {
-        spawn_rate: Phaser.Timer.SECOND * 3,
+        spawn_rate: Phaser.Timer.SECOND * 2.5,
         spawn_timer: null,
         spawn_timer_params: [add_grouped, this, 'jellyfish'],
-        RATE_CAP: Phaser.Timer.SECOND * 2,
+        RATE_CAP: Phaser.Timer.SECOND * 1.5,
         diplomacy: DIPLOMACY.OBSTACLE
     },
     'shark': {
@@ -548,11 +548,12 @@ function add_patty_group() {
 /*
  * Some entities are different, we want to add them in groups
  * instead of randomlly spread out
+ * TODO: Delete this method, it's getting too clunky..
  */
 function add_grouped(entity_name) {
     var variance_mapping = {
         'bubble': 100,
-        'jellyfish': 50
+        'jellyfish': 180
     };
     var spawn_mapping = {
         'bubble': add_bubble,
@@ -560,25 +561,36 @@ function add_grouped(entity_name) {
     };
     var max_mapping = {
         'bubble': 50,
-        'jellyfish': 30
+        'jellyfish': 15
     };
+
     var x_coord = Math.floor(Math.random() * game.world.width);
     var y_coord = 0;
-    var n = Math.floor(4 + (Math.random() * max_mapping[entity_name]));
+	var direction = 1;
 
+    if (entity_name == 'jellyfish') {
+        var dice_roll = Math.random() < 0.5;
+        x_coord = dice_roll < 0.5 ? 0 : game.world.width - 1;
+        direction = x_coord === 0 ? 1 : -1; 
+    }
+
+    var n = Math.floor(4 + (Math.random() * max_mapping[entity_name]));
     for (var i = 0; i < n; i++) {
         var pos_neg = Math.random() <= 0.5 ? -1 : 1;
         var x_variance = pos_neg * Math.random() *
                             variance_mapping[entity_name];
         var y_variance = -1 * Math.random() *
                             variance_mapping[entity_name];
+
         spawn_mapping[entity_name](
-            x_coord + x_variance, y_coord + y_variance);
+            x_coord + x_variance,
+            y_coord + y_variance,
+            direction);
     }
 }
 
 
-function add_bubble(x_coord, y_coord) {
+function add_bubble(x_coord, y_coord, direction) {
     var bubble = bubbles.create(x_coord, y_coord, 'bubble');
 
     bubble.body.bounce.y = 0.9 + Math.random() * 0.2;
@@ -593,21 +605,20 @@ function add_bubble(x_coord, y_coord) {
 }
 
 
-function add_jellyfish(x_coord, y_coord) {
+function add_jellyfish(x_coord, y_coord, direction) {
     var jelly = jellyfishes.create(x_coord, y_coord, 'jellyfish');
-	var direction = (Math.random() < 0.5) ? -1 : 1;
 
     jelly.body.bounce.y = 0.7 + Math.random() * 0.2;
-    jelly.checkWorldBounds = true; 
-    jelly.outOfBoundsKill = true;
     jelly.animations.add('swim', [0, 1, 2, 3], 12, true);
     jelly.animations.play('swim');
-    jelly.oscl_coef = (Math.random() * (100) + 200) * direction;
+    jelly.oscl_coef = (Math.random() * (200) + 200) * direction;
+
 	if (direction > 0) {
 		jelly.x_speed = (jelly.oscl_coef - 100);
 	} else {
 		jelly.x_speed = (jelly.oscl_coef + 100);
 	}	
+
     // Start each jellyfish at a random animation to look more real
     jelly.animations.currentAnim.frame = Math.floor(Math.random() * 3);
 }
@@ -728,6 +739,14 @@ function update_physics() {
         item.body.velocity.y = item.oscl_coef *
                                 Math.sin(game.time.now / 100) + speed;
     }, this);
+
+    for (var i = 0; i < jellyfishes.length; i++) {
+        var item = jellyfishes.getChildAt(i);
+        if (item.body.y > (game.world.height)) {
+            item.destroy();
+            i--;
+        }
+    }
 
     bubbles.forEach(function(item) {
         if (game_ended) {
