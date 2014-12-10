@@ -4,15 +4,18 @@ var DEBUG = true,
     GAME_HEIGHT = 600,
     GROUND_HEIGHT = 128,
     SOUND_BUTTON_WIDTH = 25,
-    PATRICK_VELOCITY_X = 300,
+    PATRICK_VELOCITY_X = 400,
     PATRICK_VELOCITY_Y_PATTY = 400,
     PATRICK_VELOCITY_Y_GRAVITY_LOSS = 30,
+    PATTY_ENERGY_BOOST = 30,
+    FIRST_PATTY_ENERGY_BOOST = 175,
     PATTY_SPEED_BOOST = 350,
     ENERGY_CAP = 500,
     SHIELD_HEALTH = 5,
     ALTITUDE_CHUNK = 4000,
     ALTITUDE_SPEED_INCREASE_RATE = 1 / 60,
-    SPEED_GAME_LOSS_THRESHHOLD = -1000,
+    SPEED_GAME_LOSS_THRESHHOLD = -1200,
+    PATTY_LIMBO_HEIGHT = 200,
     GAME_TEXT = 'Lucida Grande',
     BLACK_HEX = '#000',
     GREEN_HEX = '#5DFC0A',
@@ -46,11 +49,11 @@ var entity_spawn_map = {
         diplomacy: DIPLOMACY.NEUTRAL
     },
     'patty': {
-        spawn_rate: Phaser.Timer.SECOND * 0.25,
+        spawn_rate: Phaser.Timer.SECOND * 0.5,
         spawn_timer: null,
-        spawn_timer_params: [add_krabby_patty, this],
+        spawn_timer_params: [add_patty_group, this],
         RATE_CAP: Phaser.Timer.SECOND * 2,
-        DIPLOMACY: DIPLOMACY.POWERUP
+        diplomacy: DIPLOMACY.POWERUP
     },
     'jellyfish': {
         spawn_rate: Phaser.Timer.SECOND * 3,
@@ -319,6 +322,7 @@ function create() {
             'patty');
     first_patty.scale.setTo(0.4, 0.4);
     first_patty.body.gravity.y = 600;
+    first_patty.is_first = true;
 	
     // ===== Buttons & controls seperate from game world =====
     add_sound_control_button();
@@ -481,14 +485,63 @@ function fuzz_number(number) {
 }
 
 
-function add_krabby_patty() {
-    var patty = patties.create(
-                    Math.floor(Math.random() * game.world.width),
-                    0,
-                    'patty');
-    patty.checkWorldBounds = true; 
-    patty.outOfBoundsKill = true;
-    patty.scale.setTo(0.4, 0.4);
+function add_patty(x, y) {
+    var patty = patties.create(x, y, 'patty');
+    patty.scale.setTo(0.35, 0.35);
+    return patty;
+}
+
+
+function add_varied_patties(n) {
+    var variance = 50;
+    var x_start = Math.floor(Math.random() * (
+                game.world.width - variance));
+    var y_coord = 0;
+
+    for (var i = 0; i < n; ++i) {
+        var x_coord = Math.floor(x_start +
+                variance * (2 * Math.random() - 1));
+        var patty = add_patty(x_coord, y_coord);
+        y_coord -= patty.height +
+            Math.floor(Math.random() * 2 * variance);
+    }
+}
+
+
+function add_step_patties(n) {
+    var x_step = 60;
+    var y_step = 90;
+
+    var x_start = Math.floor(Math.random() * game.world.width);
+    var y_start = 0;
+
+    var x_dir = (Math.random() < 0.5) ? -1 : 1;
+
+    for (var i = 0; i < n; ++i) {
+        var x_coord = x_start + x_step * i * x_dir;
+        var y_coord = y_start - y_step * i;
+        add_patty(x_coord, y_coord);
+    }
+}
+
+
+/*
+ * Group has a random center and start
+ * coords and number of individual patties are varied
+ *
+ * As the game gets harder (higher altitude) instead of
+ * spawning fewer patties per "group", we will spawn fewer
+ * groups but maintain the same number of patties per group
+ * so `range_patties` and `offset` remain the same
+ */
+function add_patty_group() {
+	var range_patties = 7;
+	var offset = 3;
+
+    var patterns = [add_varied_patties, add_step_patties];
+	var num_patties = offset + Math.floor(Math.random() * range_patties);
+	var pat = Math.floor(Math.random() * patterns.length);
+	patterns[pat](num_patties);
 }
 
 
@@ -504,11 +557,11 @@ function add_grouped(entity_name) {
     var spawn_mapping = {
         'bubble': add_bubble,
         'jellyfish': add_jellyfish
-    }
+    };
     var max_mapping = {
         'bubble': 50,
         'jellyfish': 30
-    }
+    };
     var x_coord = Math.floor(Math.random() * game.world.width);
     var y_coord = 0;
     var n = Math.floor(4 + (Math.random() * max_mapping[entity_name]));
@@ -706,6 +759,19 @@ function update_physics() {
         item.body.acceleration.y = acceleration;
     }, this);
 
+    // we handle garbage collecting our own patties
+    // instead using phaser's "outOfWorldBoundsKill"
+    // service because we spawn patties above the top
+    // of the game window to generate patterns
+    for (var i = 0; i < patties.length; i++) {
+        var item = patties.getChildAt(i);
+        if (item.body.y > 
+                (game.world.height + PATTY_LIMBO_HEIGHT)) {
+            item.destroy();
+            i--;
+        }
+    }
+
     inks.forEach(function(item) {
         item.body.velocity.y = speed;
         item.body.acceleration.y = acceleration;
@@ -786,7 +852,6 @@ function update_physics() {
 
 
 function update() {
-
     // ==========================
     // ==== Check collisions ====
     // ==========================
@@ -893,8 +958,12 @@ function hit_patty(player, patty) {
     aura.reset(player.x, player.y);
     aura.play('revive', 60, false, true);
 
-    energy += 100;
+    energy += PATTY_ENERGY_BOOST;
     energy = Math.min(energy, ENERGY_CAP);
+
+    if (patty.is_first) {
+        energy += FIRST_PATTY_ENERGY_BOOST;
+    }
 
     patty_boost_timer = 15;
 }
