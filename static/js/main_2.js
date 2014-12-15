@@ -5,11 +5,14 @@ var DEBUG = true,
     GROUND_HEIGHT = 128,
     SOUND_BUTTON_WIDTH = 25,
     PATRICK_VELOCITY_X = 400,
-    PATRICK_VELOCITY_Y_PATTY = 400,
+    PATRICK_VELOCITY_Y_PATTY = 300,
     PATRICK_VELOCITY_Y_GRAVITY_LOSS = 30,
     PATTY_ENERGY_BOOST = 30,
+    PATTY_BOOST_DURATION = 7,
     FIRST_PATTY_ENERGY_BOOST = 175,
-    PATTY_SPEED_BOOST = 350,
+    FISHING_HOOK_TIMER = 100;
+    PATTY_SPEED_BOOST = 375,
+    HOOK_SPEED_BOOST = 500,
     ENERGY_CAP = 500,
     SHIELD_HEALTH = 5,
     ALTITUDE_CHUNK = 4000,
@@ -89,6 +92,13 @@ var entity_spawn_map = {
         spawn_timer_params: [add_bubble_shield, this],
         RATE_CAP: Phaser.Timer.SECOND * 15,
         diplomacy: DIPLOMACY.POWERUP
+    },
+    'hook': {
+        spawn_rate: Phaser.Timer.SECOND * 3,
+        spawn_timer: null,
+        spawn_timer_params: [add_fishing_hook, this],
+        RATE_CAP: Phaser.Timer.SECOND * 15,
+        diplomacy: DIPLOMACY.POWERUP
     }
 };
 
@@ -110,6 +120,7 @@ function preload() {
     game.load.spritesheet('squid', 'static/imgs/squidsheet.png', 49, 121);
     game.load.spritesheet('ink', 'static/imgs/ink.png', 600, 600);
     game.load.spritesheet('jellyfish', 'static/imgs/jellyfish_sprites.png', 29, 25);
+    game.load.image('hook', 'static/imgs/hook_sprite.png');
 
     game.load.spritesheet('aura_good', 'static/imgs/powerup_sprite.png', 192, 192);
     game.load.image('golden_bubble', 'static/imgs/golden_bubble.png');
@@ -155,8 +166,17 @@ var _____,
     clams,
     corals,
     seaweeds,
-    bubble_shields,
-    shield,
+    bubble_shields,  // powerups falling down
+    shield,          // after acquiring the powerup, displayed on Patrick
+    // only one fishing hook can be on screen at a time
+    // after a hook is acquired, until it's used up, no new hooks will be
+    // spawned
+    fishing_hooks,   // similar to `bubble_shields`
+    hook,            // similar to `shield`
+    // fishing hook entities are special because they need
+    // to have an auxilary fishing line drawn on top of them
+    fishing_hook_line, 
+    hook_line_sprite,
 
     // Text
     altitude_text,
@@ -165,6 +185,7 @@ var _____,
 
     // Timer,
     squid_timer,
+    hook_timer = 0,   // fishing hook duration timer
 
     // Music
     sounds,
@@ -185,14 +206,15 @@ var _____,
  */
 function create() {
     sounds = {
-        pop: game.add.audio('pop'),  // shark enters
-        hurt: game.add.audio('hurt'),  // hit by obstacle
-        splat: game.add.audio('splat'),  // ink on screen
-        hit: game.add.audio('hit', 0.7),  // hit shield
+        pop: game.add.audio('pop'),              // shark enters
+        hurt: game.add.audio('hurt'),            // hit by obstacle
+        splat: game.add.audio('splat'),          // ink on screen
+        hit: game.add.audio('hit', 0.7),         // hit shield
         intro: game.add.audio('intro_gong', 0.4),
-        whoosh: game.add.audio('whoosh', 0.2),  // hit patty
+        whoosh: game.add.audio('whoosh', 0.2),   // hit patty
         happy_bg: game.add.audio('happy_bg', 0.3, true),
     };
+
     sounds.intro.play();
     sounds.happy_bg.play();
 
@@ -249,7 +271,16 @@ function create() {
     shield.exists = false;
     shield.scale.setTo(0.43, 0.43);
     shield.anchor.setTo(0.43, 0.43);
-	
+
+    hook = game.add.sprite(0, 0, 'hook');
+    hook.exists = false;
+    hook.scale.setTo(0.075, 0.075);
+
+    fishing_hook_line = game.add.bitmapData(
+                            game.world.width,
+                            game.world.height);
+    hook_line_sprite = game.add.sprite(0, 0, fishing_hook_line);
+
     jellyfishes = game.add.group();
     jellyfishes.enableBody = true;
 
@@ -279,6 +310,9 @@ function create() {
 	
     bubble_shields = game.add.group();
     bubble_shields.enableBody = true;
+
+    fishing_hooks = game.add.group();
+    fishing_hooks.enableBody = true;
 
     // ===== Initial background scenery =====
     var scenery_y_base = game.world.height - GROUND_HEIGHT - 170;
@@ -608,7 +642,7 @@ function add_shark() {
 
     var y_coord = 300;
     var coin = (Math.random() <= 0.5) ? -1 : 1;
-    var x_coord = (coin === -1) ? GAME_WIDTH : 0;
+    var x_coord = (coin === -1) ? game.world.width : 0;
 	var shark = sharks.create(x_coord, y_coord, 'shark');
 
     shark.anchor.setTo(0.5, 1);
@@ -639,10 +673,61 @@ function add_clam() {
 
 function add_bubble_shield() {
     var shield = bubble_shields.create(
-                    Math.random() * 650, 0, 'golden_bubble');
+                    Math.random() * game.world.width,
+                    0,
+                    'golden_bubble');
     shield.checkWorldBounds = true;
     shield.outOfBoundsKill = true;
     shield.scale.setTo(0.43, 0.43);
+}
+
+
+function add_fishing_hook() {
+    // this is really hacky .. and a terrible example on how
+    // to implement the feature of "only having one entity
+    // at a time", this was done because our demo day is soon
+    if (hook_timer) {
+        return;
+    }
+    var fhook = fishing_hooks.create(
+                    Math.random() * game.world.width,
+                    0,
+                    'hook');
+    fhook.scale.setTo(0.075, 0.075);
+}
+
+
+// draws lines for any given fishing hooks on screen
+function add_fishing_hook_line(hook) {
+    fishing_hook_line.clear();
+    fishing_hook_line.ctx.strokeStyle = 'white';
+    fishing_hook_line.ctx.beginPath();
+    fishing_hook_line.ctx.moveTo(hook.x + 40, 0);
+    fishing_hook_line.ctx.lineTo(hook.x + 40, hook.y + 15);
+    fishing_hook_line.ctx.lineWidth = 2;
+    fishing_hook_line.ctx.stroke();
+    fishing_hook_line.ctx.closePath();
+
+    fishing_hook_line.render();
+    fishing_hook_line.refreshBuffer(); 
+}
+
+
+// for simplicity, only one line is to exist at once: this is
+// because only one fishing hook will exist at once. instead of
+// removing the line via bitmapdata, we redraw it as nothing
+function remove_fishing_hook_line() {
+    fishing_hook_line.clear();
+    fishing_hook_line.ctx.strokeStyle = 'white';
+    fishing_hook_line.ctx.beginPath();
+    fishing_hook_line.ctx.moveTo(0, 0);
+    fishing_hook_line.ctx.lineTo(0, 0);
+    fishing_hook_line.ctx.lineWidth = 2;
+    fishing_hook_line.ctx.stroke();
+    fishing_hook_line.ctx.closePath();
+
+    fishing_hook_line.render();
+    fishing_hook_line.refreshBuffer(); 
 }
 
 
@@ -706,6 +791,10 @@ function update_physics() {
     shield.x = player.x;
     shield.y = player.y;
 
+    hook.x = player.x - 23;
+    hook.y = player.y - 53;
+
+    hook.exists = (hook_timer > 0) ? true : false;
     shield.exists = (shield_life > 0) ? true : false;
 	
     platforms.forEach(function(item) {
@@ -807,6 +896,49 @@ function update_physics() {
         }
     }, this);
 	
+    ////////////////////////////////////////////////////////////////////////
+    ////////////// fishing hook & line code is really hacky ////////////////
+    ////////////////////////////////////////////////////////////////////////
+    
+    fishing_hooks.forEach(function(item) {
+        item.body.velocity.y = speed;
+        item.body.acceleration.y = acceleration;
+        item.body.gravity.y = 150;
+        if (speed < 0 || acceleration < 0) {
+            item.body.velocity.y = PATRICK_VELOCITY_Y_PATTY;
+            item.body.acceleration.y = 200;
+            item.body.gravity.y = 150;
+        }
+    }, this);
+
+    // manual fishing hook garbage collection
+    for (var i = 0; i < fishing_hooks.length; i++) {
+        var item = fishing_hooks.getChildAt(i);
+        if (item.body.y > game.world.height) {
+            item.destroy();
+            i--;
+        }
+    }
+
+    if (fishing_hooks.length == 1) {
+        var hookOnScreen = fishing_hooks.getChildAt(0);
+        add_fishing_hook_line(hookOnScreen);
+    }
+    else if (hook_timer > 0) {
+        add_fishing_hook_line(hook);
+    }
+    else if (fishing_hooks.length == 0 && hook_timer == 0) {
+        remove_fishing_hook_line();
+    }
+    else {
+        console.log('ERROR: There should only be ' +
+                    'one hook onscreen at a time');
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////
+
     squids.forEach(function(item) {
         // Fix squid physics effect. Squids are unique because they 
         // are naturally floating upwards, not downwards.
@@ -820,6 +952,10 @@ function update_physics() {
         item.body.velocity.y = speed_coeff * speed;
     }, this);
 
+
+    // console.log(patties.length + " " + jellyfishes.length + " " + bubble_shields.length + " " + clams.length + " " + bubbles.length + " " + sharks.length);
+
+
     // Game over when Patrick has been falling for a little bit
     // Safe assumption because all entities are killed after
     // they fall off the map, Patrick has no way of getting up
@@ -828,11 +964,16 @@ function update_physics() {
     }
 
     // Exhaust effect of patties so they don't last forever
-    if (energy > 0) {
+    if (energy > 0 || hook_timer > 0) {
         speed = PATRICK_VELOCITY_Y_PATTY;
         if (patty_boost_timer > 0) {
-            speed = speed + PATTY_SPEED_BOOST;
+            speed += PATTY_SPEED_BOOST;
             patty_boost_timer--;
+        }
+        // hook speed boosts are seperate from patties and energy
+        if (hook_timer > 0) {
+            speed += HOOK_SPEED_BOOST;
+            hook_timer--;
         }
         energy--;
     }
@@ -892,6 +1033,13 @@ function update() {
         null,
         this
     );
+    game.physics.arcade.overlap(
+        player,
+        fishing_hooks,
+        hit_fishing_hook,
+        null,
+        this
+    );
 		
     set_spawn_rates();
 
@@ -905,7 +1053,7 @@ function update() {
     var falling = (speed <= 0 && altitude > 0);
     var swimming = (speed > 0 && altitude > 0); 
 
-    if (swimming) {
+    if (swimming && hook_timer == 0) {
         player.animations.play('swimming');
     }
     else if (walking) {
@@ -930,7 +1078,11 @@ function update() {
             facing_right = true; 
             player.scale.x *= -1;
         }
-    } else if (walking) {
+    } 
+
+    if (hook_timer > 0 || 
+           (walking && !cursors.left.isDown &&
+           !cursors.right.isDown)) {
         player.animations.stop();
         player.frame = 14;
     }
@@ -951,7 +1103,7 @@ function update() {
 
 function hit_patty(player, patty) {
     sounds.whoosh.play();
-    patty.kill();
+    patty.destroy();
 
     aura.reset(player.x, player.y);
     aura.play('revive', 60, false, true);
@@ -963,12 +1115,12 @@ function hit_patty(player, patty) {
         energy += FIRST_PATTY_ENERGY_BOOST;
     }
 
-    patty_boost_timer = 15;
+    patty_boost_timer = PATTY_BOOST_DURATION;
 }
 
 
 function hit_jellyfish(player, jellyfish) {
-    jellyfish.kill();
+    jellyfish.destroy();
 	if (shield_life === 0) {
         energy = 0;
         sounds.hurt.play();
@@ -995,6 +1147,13 @@ function hit_shield(player, bubble) {
 	shield.exists = true;
 	shield_life = SHIELD_HEALTH;
 	bubble.kill();
+}
+
+
+function hit_fishing_hook(player, inHook) {
+    hook.exists = true;
+    hook_timer = FISHING_HOOK_TIMER;
+    inHook.destroy();
 }
 
 
