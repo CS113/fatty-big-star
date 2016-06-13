@@ -14,7 +14,7 @@ SECRET_KEY = 'This does not matter, our flask backend is just '\
 CSRF_ENABLED = True
 CSRF_SESSION_KEY = "dfdgjnsdkwendsspongbobsquidwarddfd"
 
-ROOT_URL = "http://fatty.lucasou.com"
+ROOT_URL = "http://fatty.codelucas.com"
 
 HIGHSCORES_URI = '/home/lucas/www/fatty-big-star/'\
                  'backend/flask-highscores-env/'\
