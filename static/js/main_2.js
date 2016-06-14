@@ -3,7 +3,6 @@ var DEBUG = true,
     GAME_WIDTH = 800,
     GAME_HEIGHT = 600,
     GROUND_HEIGHT = 128,
-    SOUND_BUTTON_WIDTH = 25,
     PATRICK_VELOCITY_X = 400,
     PATRICK_VELOCITY_Y_PATTY = 300,
     PATRICK_VELOCITY_Y_GRAVITY_LOSS = 30,
@@ -111,7 +110,7 @@ function preload() {
     game.load.image('coral_side', 'static/imgs/coral_side.png');
     game.load.spritesheet('coral', 'static/imgs/coral_sprite.png', 300, 208);
     game.load.spritesheet('seaweed', 'static/imgs/seaweed_sprite.png', 48, 60);
-
+	game.load.spritesheet('sound_button', 'static/imgs/sound_buttons.png', 170, 183);
     game.load.spritesheet('patrick', 'static/imgs/patrick_sprites.png', 46, 54);
     game.load.image('patty', 'static/imgs/patty.png');
     game.load.image('bubble', 'static/imgs/bubble.png');
@@ -189,6 +188,7 @@ var _____,
 
     // Music
     sounds,
+	sound_toggle,
 
     // Flags
     facing_right = true,
@@ -217,7 +217,7 @@ function create() {
 
     sounds.intro.play();
     sounds.happy_bg.play();
-
+	
     game.physics.startSystem(Phaser.Physics.ARCADE);
 
     game.add.sprite(0, 0, 'ocean');
@@ -275,6 +275,9 @@ function create() {
     hook = game.add.sprite(0, 0, 'hook');
     hook.exists = false;
     hook.scale.setTo(0.075, 0.075);
+	
+	sound_toggle = game.add.button(game.width - 50, 40, 'sound_button', sound_button_pressed);
+	sound_toggle.scale.setTo(0.20,0.20);
 
     fishing_hook_line = game.add.bitmapData(
                             game.world.width,
@@ -313,6 +316,8 @@ function create() {
 
     fishing_hooks = game.add.group();
     fishing_hooks.enableBody = true;
+	
+	
 
     // ===== Initial background scenery =====
     var scenery_y_base = game.world.height - GROUND_HEIGHT - 170;
@@ -359,7 +364,6 @@ function create() {
     first_patty.is_first = true;
 	
     // ===== Buttons & controls seperate from game world =====
-    add_sound_control_button();
 	
     empty_energy_bar = game.add.sprite(game.width - (216 + 10),
                                        10,
@@ -393,35 +397,26 @@ function create() {
     cursors = game.input.keyboard.createCursorKeys();
 }
 
-
-function add_sound_control_button() {
-    function sound_off() {
-        // TODO: turn ALL sounds off in the dict
-        // sounds.bg_music.volume = 0;
-        sound_off_button.width = 0;
-        sound_on_button.width = SOUND_BUTTON_WIDTH;
-    }
-    function sound_on() {
-        // sounds.bg_music.volume = 1;
-        sound_off_button.width = SOUND_BUTTON_WIDTH;
-        sound_on_button.width = 0;
-    }
-
-    sound_off_button = game.add.sprite(
-                        game.width - 50, 40, 'sound_off_button');
-    sound_off_button.width = SOUND_BUTTON_WIDTH;
-    sound_off_button.height = SOUND_BUTTON_WIDTH;
-	
-    sound_on_button = game.add.sprite(
-                        game.width - 50, 40, 'sound_on_button');
-    sound_on_button.width = 0;
-    sound_on_button.height = SOUND_BUTTON_WIDTH;
-
-    sound_off_button.inputEnabled = true;
-    sound_on_button.inputEnabled = true;
-
-    sound_off_button.events.onInputDown.add(sound_off, this);
-    sound_on_button.events.onInputDown.add(sound_on, this);
+function sound_button_pressed() {
+	if(sound_toggle.frame) //Turn on sound.
+	{
+		for(var key in sounds)
+		{
+			sounds[key].volume = 1;
+		}
+		sounds['hit'].volume = 0.7;
+		sounds['intro'].volume = 0.4;
+		sounds['whoosh'].volume = 0.2;
+		sounds['happy_bg'].volume = 0.3;
+		sound_toggle.frame = 0;
+	}
+	else{				//Turn off sound
+		for(var key in sounds)
+		{
+			sounds[key].volume = 0;
+		}
+		sound_toggle.frame = 1;
+	}
 }
 
 
